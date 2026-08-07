@@ -1,16 +1,14 @@
 import DashboardShell from '../components/DashboardShell';
+import DisasterList from '../components/DisasterList';
 
 export default function DonorDashboard() {
   return (
     <DashboardShell
       eyebrow="Donor portal"
       heading="Your donations"
-      lead="Track what you've given and where it's headed once donation records are wired up."
+      lead="Stay aware of active incidents while donation workflows are prepared."
     >
-      <div className="empty-state">
-        Nothing built here yet — next up: a form to log a donation, and a
-        history of items you've sent to warehouses.
-      </div>
+      <DisasterList />
     </DashboardShell>
   );
 }

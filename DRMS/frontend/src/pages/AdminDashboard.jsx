@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import DashboardShell from '../components/DashboardShell';
-import { createDisaster } from '../utils/api';
+import DisasterList from '../components/DisasterList';
+import { createDisaster, fetchPendingTeams, reviewTeam } from '../utils/api';
 
 export default function AdminDashboard() {
-  const [form, setForm] = useState({ title: '', division: '', district: '' });
+  const [form, setForm] = useState({ title: '', division: '', district: '', upazila: '', union: '' });
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [pendingTeams, setPendingTeams] = useState([]);
+
+  useEffect(() => {
+    fetchPendingTeams().then(({ teams }) => setPendingTeams(teams)).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -13,7 +20,8 @@ export default function AdminDashboard() {
       const res = await createDisaster(form);
       setIsError(false);
       setMessage(res.message || 'Disaster created successfully!');
-      setForm({ title: '', division: '', district: '' });
+       setForm({ title: '', division: '', district: '', upazila: '', union: '' });
+       setRefreshKey((key) => key + 1);
     } catch (err) {
       setIsError(true);
       setMessage(err.message);
@@ -26,7 +34,7 @@ export default function AdminDashboard() {
       heading="Operations overview"
       lead="Manage disaster records, locations, and relief operations."
     >
-      <div className="info-card" style={{ maxWidth: '420px' }}>
+      <div className="info-card module-card">
         <p className="eyebrow">Create New Disaster</p>
 
         {message && (
@@ -44,6 +52,16 @@ export default function AdminDashboard() {
               onChange={e => setForm({ ...form, title: e.target.value })}
               required
             />
+          </div>
+          <div className="form-grid">
+            <div className="field">
+              <label>Upazila</label>
+              <input value={form.upazila} onChange={(e) => setForm({ ...form, upazila: e.target.value })} />
+            </div>
+            <div className="field">
+              <label>Union</label>
+              <input value={form.union} onChange={(e) => setForm({ ...form, union: e.target.value })} />
+            </div>
           </div>
           <div className="field">
             <label>Division</label>
@@ -68,6 +86,30 @@ export default function AdminDashboard() {
           </button>
         </form>
       </div>
+      <DisasterList canEdit refreshKey={refreshKey} />
+
+      <section className="module-section">
+        <div className="section-heading">
+          <div><div className="eyebrow">Approval queue</div><h2>Pending teams</h2></div>
+          <span className="count-badge">{pendingTeams.length} waiting</span>
+        </div>
+        {!pendingTeams.length ? <div className="empty-state">No teams are waiting for review.</div> : (
+          <div className="team-grid">
+            {pendingTeams.map((team) => (
+              <div className="info-card" key={team.team_id}>
+                <div className="eyebrow">{team.team_type}</div>
+                <h3>{team.team_name}</h3>
+                <p className="muted">Led by {team.leader_name || 'Unknown'} · {team.members.length} members</p>
+                <div className="member-list">{team.members.map((member) => <span key={member.user_id}>{member.name} · {member.role}</span>)}</div>
+                <div className="button-row">
+                  <button className="btn-primary compact" onClick={() => reviewTeam(team.team_id, 'approve').then(() => setPendingTeams((rows) => rows.filter((row) => row.team_id !== team.team_id)))}>Approve</button>
+                  <button className="btn-ghost" onClick={() => reviewTeam(team.team_id, 'reject').then(() => setPendingTeams((rows) => rows.filter((row) => row.team_id !== team.team_id)))}>Reject</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </DashboardShell>
   );
 }

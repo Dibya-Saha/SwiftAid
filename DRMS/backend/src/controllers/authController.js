@@ -5,6 +5,10 @@ const pool = require('../db');
 const ALLOWED_ROLES = ['admin', 'donor', 'team', 'volunteer'];
 const SALT_ROUNDS = 10;
 
+function isBcryptHash(value) {
+  return typeof value === 'string' && /^\$2[aby]\$\d{2}\$/.test(value);
+}
+
 function signToken(user) {
   return jwt.sign(
     {
@@ -38,9 +42,9 @@ async function register(req, res) {
     const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
 
     const result = await pool.query(
-      `INSERT INTO users (full_name, email, password_hash, role, phone)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING user_id, full_name, email, role, phone`,
+       `INSERT INTO users (name, email, password_hash, role, phone)
+        VALUES ($1, $2, $3, $4, $5)
+       RETURNING user_id, name AS full_name, email, LOWER(role) AS role, phone`,
       [full_name, email, password_hash, role, phone || null]
     );
 
@@ -68,7 +72,7 @@ async function login(req, res) {
 
   try {
     const result = await pool.query(
-      `SELECT user_id, full_name, email, password_hash, role, phone
+      `SELECT user_id, name AS full_name, email, password_hash, LOWER(role) AS role, phone
        FROM users WHERE email = $1`,
       [email]
     );
@@ -78,9 +82,20 @@ async function login(req, res) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    const passwordMatches = await bcrypt.compare(password, user.password_hash);
+    const passwordMatches = isBcryptHash(user.password_hash)
+      ? await bcrypt.compare(password, user.password_hash)
+      : password === user.password_hash;
     if (!passwordMatches) {
       return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Upgrade legacy plaintext passwords after a successful login.
+    if (!isBcryptHash(user.password_hash)) {
+      const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+      await pool.query('UPDATE users SET password_hash = $1 WHERE user_id = $2', [
+        passwordHash,
+        user.user_id,
+      ]);
     }
 
     const { password_hash, ...safeUser } = user;
@@ -105,7 +120,7 @@ async function me(req, res) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const result = await pool.query(
-      `SELECT user_id, full_name, email, role, phone FROM users WHERE user_id = $1`,
+      `SELECT user_id, name AS full_name, email, LOWER(role) AS role, phone FROM users WHERE user_id = $1`,
       [decoded.user_id]
     );
 

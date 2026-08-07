@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
 const authRoutes = require('./routes/authRoutes');
+const teamRoutes = require('./routes/teamRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
@@ -23,6 +25,8 @@ const disasterRoutes = require('./routes/disasterRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/disasters', disasterRoutes);
+app.use('/api/teams', teamRoutes);
+app.use('/api/users', userRoutes);
 
 // Fallback 404
 app.use((req, res) => {
