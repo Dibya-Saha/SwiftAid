@@ -1,0 +1,54 @@
+<svg width="220" height="200" viewBox="20 20 220 200" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- gentle bobbing group -->
+  <g>
+    <animateTransform attributeName="transform" type="translate"
+      values="0,0; 0,-8; 0,0" dur="2.4s" repeatCount="indefinite" />
+
+    <!-- ears -->
+    <circle cx="78"  cy="60" r="26" fill="#2b2b2b"/>
+    <circle cx="182" cy="60" r="26" fill="#2b2b2b"/>
+
+    <!-- head -->
+    <circle cx="130" cy="120" r="80" fill="#ffffff" stroke="#2b2b2b" stroke-width="3"/>
+
+    <!-- eye patches -->
+    <ellipse cx="97"  cy="118" rx="26" ry="32" fill="#2b2b2b" transform="rotate(-12 97 118)"/>
+    <ellipse cx="163" cy="118" rx="26" ry="32" fill="#2b2b2b" transform="rotate(12 163 118)"/>
+
+    <!-- blinking eyes -->
+    <g>
+      <circle cx="100" cy="122" r="7" fill="#ffffff"/>
+      <circle cx="160" cy="122" r="7" fill="#ffffff"/>
+      <circle cx="100" cy="122" r="4" fill="#111111"/>
+      <circle cx="160" cy="122" r="4" fill="#111111"/>
+      <animateTransform attributeName="transform" type="scale" additive="sum"
+        values="1,1; 1,1; 1,0.1; 1,1; 1,1" keyTimes="0;0.85;0.9;0.95;1"
+        dur="3.6s" repeatCount="indefinite" />
+    </g>
+
+    <!-- nose -->
+    <ellipse cx="130" cy="150" rx="8" ry="6" fill="#2b2b2b"/>
+
+    <!-- mouth -->
+    <path d="M 130 156 Q 130 168 116 168" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linecap="round"/>
+    <path d="M 130 156 Q 130 168 144 168" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- blush -->
+    <circle cx="78"  cy="150" r="10" fill="#ffb6c1" opacity="0.6"/>
+    <circle cx="182" cy="150" r="10" fill="#ffb6c1" opacity="0.6"/>
+
+    <!-- waving paw -->
+    <g transform="translate(198,150)">
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 198 150; 22 198 150; 0 198 150; 22 198 150; 0 198 150"
+        keyTimes="0;0.25;0.5;0.75;1" dur="1.6s" repeatCount="indefinite" additive="sum"/>
+      <circle cx="0" cy="0" r="18" fill="#2b2b2b"/>
+      <circle cx="0" cy="0" r="13" fill="#ffffff"/>
+    </g>
+
+    <!-- other paw resting -->
+    <circle cx="62" cy="150" r="18" fill="#2b2b2b"/>
+    <circle cx="62" cy="150" r="13" fill="#ffffff"/>
+  </g>
+</svg>
