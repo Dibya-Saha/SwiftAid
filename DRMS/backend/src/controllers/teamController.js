@@ -95,12 +95,14 @@ async function createTeam(req, res) {
   }
 }
 
-async function listTeams(req, res, pendingOnly = false) {
+async function listTeams(req, res, mode = 'mine') {
   try {
-    const filters = pendingOnly
-      ? `WHERE LOWER(t.status) = 'pending_approval'`
-      : `WHERE t.team_id IN (SELECT team_id FROM team_members WHERE user_id = $1)`;
-    const values = pendingOnly ? [] : [req.user.user_id];
+    const filters = {
+      mine: `WHERE t.team_id IN (SELECT team_id FROM team_members WHERE user_id = $1) OR t.leader_id = $1`,
+      pending: `WHERE LOWER(t.status) = 'pending_approval'`,
+      all: ``,
+    }[mode];
+    const values = mode === 'mine' ? [req.user.user_id] : [];
     const result = await pool.query(`${teamsQuery} ${filters} GROUP BY t.team_id, leader.name ORDER BY t.team_id DESC`, values);
     return res.json({ teams: result.rows });
   } catch (err) {
@@ -110,26 +112,42 @@ async function listTeams(req, res, pendingOnly = false) {
 }
 
 async function listMine(req, res) {
-  return listTeams(req, res);
+  return listTeams(req, res, 'mine');
 }
 
 async function listPending(req, res) {
-  return listTeams(req, res, true);
+  return listTeams(req, res, 'pending');
+}
+
+async function listAll(req, res) {
+  return listTeams(req, res, 'all');
 }
 
 async function reviewTeam(req, res) {
   const status = req.params.action === 'approve' ? 'approved' : 'rejected';
+  const client = await pool.connect();
   try {
-    const result = await pool.query(
+    await client.query('BEGIN');
+    const result = await client.query(
       `UPDATE teams SET status = $1, approved_by_admin_id = $2 WHERE team_id = $3
        RETURNING team_id, team_name, team_type, status, leader_id, approved_by_admin_id`,
       [status, req.user.user_id, req.params.id]
     );
-    if (!result.rows[0]) return res.status(404).json({ message: 'Team not found' });
+    if (!result.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Team not found' });
+    }
+    if (status === 'rejected') {
+      await client.query('DELETE FROM team_members WHERE team_id = $1', [req.params.id]);
+    }
+    await client.query('COMMIT');
     return res.json({ team: result.rows[0] });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('[teams/review] error:', err);
     return res.status(500).json({ message: 'Failed to review team' });
+  } finally {
+    client.release();
   }
 }
 
@@ -161,20 +179,28 @@ async function leaveTeam(req, res) {
 
 async function disbandTeam(req, res) {
   const { id } = req.params;
+  const client = await pool.connect();
   try {
-    const result = await pool.query(
-      `DELETE FROM teams WHERE team_id = $1 AND leader_id = $2
-       RETURNING team_id`,
+    await client.query('BEGIN');
+    const result = await client.query(
+      `UPDATE teams SET status = 'disbanded' WHERE team_id = $1 AND leader_id = $2 AND status <> 'disbanded'
+       RETURNING team_id, team_name, team_type, status, leader_id`,
       [id, req.user.user_id]
     );
     if (!result.rows[0]) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ message: 'Team not found or you are not its leader' });
     }
-    return res.json({ message: 'Team disbanded' });
+    await client.query('DELETE FROM team_members WHERE team_id = $1', [id]);
+    await client.query('COMMIT');
+    return res.json({ team: result.rows[0], message: 'Team disbanded' });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('[teams/disband] error:', err);
     return res.status(500).json({ message: 'Failed to disband team' });
+  } finally {
+    client.release();
   }
 }
 
-module.exports = { createTeam, listMine, listPending, reviewTeam, leaveTeam, disbandTeam, TEAM_TYPES };
+module.exports = { createTeam, listMine, listPending, listAll, reviewTeam, leaveTeam, disbandTeam, TEAM_TYPES };

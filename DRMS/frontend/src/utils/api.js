@@ -46,6 +46,8 @@ export const fetchMyTeams = () => request('/teams/mine');
 
 export const fetchPendingTeams = () => request('/teams/pending');
 
+export const fetchAllTeams = () => request('/teams');
+
 export const reviewTeam = (id, action) =>
   request(`/teams/${id}/${action}`, { method: 'POST' });
 

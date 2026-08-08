@@ -1,9 +1,10 @@
 const express = require('express');
-const { createTeam, listMine, listPending, reviewTeam, leaveTeam, disbandTeam } = require('../controllers/teamController');
+const { createTeam, listMine, listPending, listAll, reviewTeam, leaveTeam, disbandTeam } = require('../controllers/teamController');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
+router.get('/', requireAuth, requireRole('admin'), listAll);
 router.post('/', requireAuth, requireRole('team'), createTeam);
 router.get('/mine', requireAuth, listMine);
 router.get('/pending', requireAuth, requireRole('admin'), listPending);
