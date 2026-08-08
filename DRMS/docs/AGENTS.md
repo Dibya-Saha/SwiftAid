@@ -19,22 +19,7 @@ The system manages:
 
 ## Technology Stack
 
-### Backend
-
-- Node.js
-- Express.js
-- PostgreSQL
-- pg
-- bcrypt
-- jsonwebtoken
-- dotenv
-
-### Frontend
-
-- React
-- Vite
-- React Router
-- Vanilla CSS
+See [README.md](../README.md) for the authoritative stack (Node.js/Express/PostgreSQL backend, React/Vite frontend).
 
 ---
 
@@ -43,16 +28,12 @@ The system manages:
 Before implementing ANY feature, read the following files in order:
 
 1. README.md
-2. DRMS-FEATURES.md
-3. docs/PROJECT_ARCHITECTURE.md
-4. docs/DATABASE_SCHEMA.md
-5. docs/BUSINESS_RULES.md
-6. docs/ROLE_PERMISSIONS.md
-7. docs/API_CONVENTIONS.md
-8. backend/src/server.js
-9. backend/src/db.js
-10. backend/src/middleware/auth.js
-11. Relevant routes, controllers, pages, and API utility files
+2. docs/DATABASE_SCHEMA.md
+3. docs/SPECIFICATION.md
+4. backend/src/server.js
+5. backend/src/db.js
+6. backend/src/middleware/auth.js
+7. Relevant routes, controllers, pages, and API utility files
 
 Never start coding before reading these files.
 
@@ -99,19 +80,9 @@ Never start coding before reading these files.
 
 # Future Modules
 
-The following database modules already exist in the schema but are not fully implemented:
+The following database modules already exist in the schema but are not fully implemented: shelters, warehouses, items, inventory, victims, donations, relief_requests, request_items, and distributions.
 
-- shelters
-- warehouses
-- items
-- inventory
-- victims
-- donations
-- relief_requests
-- request_items
-- distributions
-
-Follow the same architecture and conventions used by existing modules.
+See [SPECIFICATION.md](SPECIFICATION.md) (Feature Roadmap section) for the suggested implementation order and pattern. Follow the same architecture and conventions used by existing modules.
 
 ---
 
@@ -167,6 +138,7 @@ backend/src/
 ```text
 routes/
 controllers/
+sqls/        # named SQL query-string constants imported by controllers
 middleware/
 utils/
 server.js
@@ -427,59 +399,12 @@ Do not redesign existing dashboards.
 
 # Role Permissions
 
-## ADMIN
+The authoritative capability and endpoint-access matrix is maintained in [SPECIFICATION.md](SPECIFICATION.md) (Role Permissions section).
 
-Allowed:
-
-- Create disasters
-- Update disaster status
-- Review teams
-- Approve teams
-- Reject teams
-
-Future:
-
-- Manage shelters
-- Manage warehouses
-- Manage inventory
-- Approve distributions
-
----
-
-## TEAM
-
-Allowed:
-
-- Create teams
-- Manage team membership
-- View assigned operations
-
-Future:
-
-- Receive distributions
-- Execute deliveries
-
----
-
-## VOLUNTEER
-
-Allowed:
-
-- Join teams
-- View teams
-
-Future:
-
-- Participate in field operations
-
----
-
-## DONOR
-
-Future:
-
-- Create donations
-- View donation history
+- ADMIN: disasters, team review/approval, and future operational management.
+- TEAM: create and manage teams.
+- VOLUNTEER: join and view teams.
+- DONOR: future donation workflows.
 
 ---
 
@@ -585,8 +510,7 @@ Do not invent API behavior.
 Always use:
 
 - DATABASE_SCHEMA.md
-- BUSINESS_RULES.md
-- ROLE_PERMISSIONS.md
+- SPECIFICATION.md
 
 as the source of truth.
 

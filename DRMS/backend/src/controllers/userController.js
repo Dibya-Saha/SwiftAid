@@ -1,14 +1,9 @@
 const pool = require('../db');
+const { LIST_VOLUNTEERS } = require('../sqls/userSqls');
 
 async function listVolunteers(req, res) {
   try {
-    const result = await pool.query(
-      `SELECT user_id, name AS full_name, email
-       FROM users
-       WHERE LOWER(role) = 'volunteer'
-         AND user_id NOT IN (SELECT user_id FROM team_members)
-       ORDER BY name`
-    );
+    const result = await pool.query(LIST_VOLUNTEERS);
     return res.json({ volunteers: result.rows });
   } catch (err) {
     console.error('[users/volunteers] error:', err);

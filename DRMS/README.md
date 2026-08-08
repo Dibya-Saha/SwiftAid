@@ -10,12 +10,19 @@ Two folders:
 Your `users` table (the one you already created) is used as-is — nothing
 in this backend alters your schema.
 
-## 1. Backend setup
+## Tech stack
+
+**Backend:** Node.js, Express 4, PostgreSQL (`pg`), bcrypt, jsonwebtoken, dotenv.
+**Frontend:** React 18, Vite, React Router, vanilla CSS (dark control-room UI, amber accent).
+
+
+## 1. Setup (npm workspaces)
+
+One install at the root handles both apps:
 
 ```bash
-cd backend
 npm install
-cp .env.example .env
+cp backend/.env.example backend/.env
 ```
 
 Edit `.env` and put in your real local Postgres password (same
@@ -23,11 +30,13 @@ credentials you used for the `DRMS_local` connection in Navicat:
 host `localhost`, port `5432`, database `postgres`, user `postgres`).
 Also change `JWT_SECRET` to any random string.
 
-Run it:
+Run both servers concurrently from the root:
 
 ```bash
 npm run dev
 ```
+
+Or in separate terminals: `npm run dev -w backend` and `npm run dev -w frontend`.
 
 You should see:
 
@@ -36,21 +45,17 @@ You should see:
 [server] DRMS API running on http://localhost:5000
 ```
 
-Sanity check in your browser or curl: `http://localhost:5000/api/health`
-should return `{"status":"ok","db":"connected"}`. If `db` says
-`unreachable`, double check the `.env` values against Navicat.
+Sanity check in your browser or curl: `http://localhost:5173/api/health`
+(the Vite dev proxy forwards it to the backend) should return
+`{"status":"ok","db":"connected"}`. If `db` says `unreachable`, double
+check the `.env` values against Navicat.
 
-## 2. Frontend setup
+> Note: the backend can take ~15-20s to be ready on a fresh start.
+> Wait until the log shows `[db] connected to Postgres` before signing in.
 
-In a second terminal:
+## 2. Frontend
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open `http://localhost:5173`. You'll land on the login page.
+Already running via `npm run dev` above. Open `http://localhost:5173`. You'll land on the login page.
 
 ## 3. Try the full flow
 

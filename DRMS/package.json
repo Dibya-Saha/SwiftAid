@@ -1,10 +1,17 @@
 {
     "name": "drms-root",
     "version": "1.0.0",
+    "private": true,
     "description": "Root project for DRMS (Frontend and Backend)",
+    "workspaces": [
+        "backend",
+        "frontend"
+    ],
     "scripts": {
-        "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
-        "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend"
+        "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+        "dev:backend": "npm run dev -w backend",
+        "dev:frontend": "npm run dev -w frontend",
+        "install:all": "npm install"
     },
     "devDependencies": {
         "concurrently": "^8.2.2"

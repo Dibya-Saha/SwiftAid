@@ -1,4 +1,12 @@
 const pool = require('../db');
+const {
+  FIND_LOCATION,
+  INSERT_LOCATION,
+  INSERT_DISASTER,
+  INSERT_DISASTER_LOCATION,
+  LIST_DISASTERS,
+  UPDATE_DISASTER_STATUS,
+} = require('../sqls/disasterSqls');
 
 // POST /api/disasters
 async function createDisaster(req, res) {
@@ -12,31 +20,24 @@ async function createDisaster(req, res) {
         try {
             await client.query('BEGIN');
             const locationResult = await client.query(
-                `SELECT location_id FROM locations
-                 WHERE division = $1 AND district = $2
-                   AND upazila IS NOT DISTINCT FROM $3
-                   AND union_name IS NOT DISTINCT FROM $4
-                 LIMIT 1`,
+                FIND_LOCATION,
                 [division, district, upazila || null, unionName || union_name || null]
             );
             const locationId = locationResult.rows[0]?.location_id || (
                 await client.query(
-                    `INSERT INTO locations (division, district, upazila, union_name)
-                     VALUES ($1, $2, $3, $4) RETURNING location_id`,
+                    INSERT_LOCATION,
                     [division, district, upazila || null, unionName || union_name || null]
                 )
             ).rows[0].location_id;
 
             const disasterResult = await client.query(
-                `INSERT INTO disasters (title, status, start_date, created_by_admin_id)
-                 VALUES ($1, 'ACTIVE', CURRENT_DATE, $2)
-                 RETURNING disaster_id, title, status, start_date`,
+                INSERT_DISASTER,
                 [title, req.user.user_id]
             );
             const disaster = disasterResult.rows[0];
 
             await client.query(
-                `INSERT INTO disaster_locations (disaster_id, location_id) VALUES ($1, $2)`,
+                INSERT_DISASTER_LOCATION,
                 [disaster.disaster_id, locationId]
             );
             await client.query('COMMIT');
@@ -56,21 +57,7 @@ async function createDisaster(req, res) {
 // GET /api/disasters
 async function listDisasters(req, res) {
     try {
-        const result = await pool.query(
-            `SELECT d.disaster_id, d.title, d.status, d.start_date,
-                    COALESCE(json_agg(json_build_object(
-                        'location_id', l.location_id,
-                        'division', l.division,
-                        'district', l.district,
-                        'upazila', l.upazila,
-                        'union_name', l.union_name
-                    ) ORDER BY l.location_id) FILTER (WHERE l.location_id IS NOT NULL), '[]') AS locations
-             FROM disasters d
-             LEFT JOIN disaster_locations dl ON dl.disaster_id = d.disaster_id
-             LEFT JOIN locations l ON l.location_id = dl.location_id
-             GROUP BY d.disaster_id
-             ORDER BY d.start_date DESC, d.disaster_id DESC`
-        );
+        const result = await pool.query(LIST_DISASTERS);
         return res.json({ disasters: result.rows });
     } catch (err) {
         console.error('[disasters/list] error:', err);
@@ -88,8 +75,7 @@ async function updateDisasterStatus(req, res) {
 
     try {
         const result = await pool.query(
-            `UPDATE disasters SET status = $1 WHERE disaster_id = $2
-             RETURNING disaster_id, title, status, start_date`,
+            UPDATE_DISASTER_STATUS,
             [status, req.params.id]
         );
         if (!result.rows[0]) return res.status(404).json({ message: 'Disaster not found' });

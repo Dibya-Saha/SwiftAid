@@ -1,22 +1,22 @@
 const pool = require('../db');
+const {
+  TEAMS_QUERY,
+  TEAMS_GROUP_ORDER,
+  TEAM_FILTERS,
+  MEMBERSHIP_BY_USER,
+  VOLUNTEERS_BY_IDS,
+  MEMBERSHIPS_BY_IDS,
+  INSERT_TEAM,
+  INSERT_LEADER_MEMBER,
+  INSERT_MEMBER_ROWS,
+  UPDATE_TEAM_STATUS,
+  DELETE_MEMBERS_BY_TEAM,
+  DELETE_MEMBER_ROW,
+  LEADER_ROW_BY_TEAM,
+  DISBAND_TEAM,
+} = require('../sqls/teamSqls');
 
 const TEAM_TYPES = ['medical', 'rescue', 'logistics', 'distribution', 'general'];
-
-const teamsQuery = `
-  SELECT t.team_id, t.team_name, t.team_type, t.status, t.leader_id,
-         leader.name AS leader_name,
-         COALESCE(json_agg(json_build_object(
-           'user_id', member.user_id,
-           'name', member.name,
-           'email', member.email,
-           'role', tm.member_role
-         ) ORDER BY tm.member_role DESC, member.name)
-         FILTER (WHERE member.user_id IS NOT NULL), '[]') AS members
-  FROM teams t
-  LEFT JOIN users leader ON leader.user_id = t.leader_id
-  LEFT JOIN team_members tm ON tm.team_id = t.team_id
-  LEFT JOIN users member ON member.user_id = tm.user_id
-`;
 
 async function createTeam(req, res) {
   const { team_name, team_type, volunteer_ids = [] } = req.body;
@@ -37,7 +37,7 @@ async function createTeam(req, res) {
     await client.query('BEGIN');
 
     const leaderMembership = await client.query(
-      'SELECT 1 FROM team_members WHERE user_id = $1',
+      MEMBERSHIP_BY_USER,
       [req.user.user_id]
     );
     if (leaderMembership.rowCount) {
@@ -47,7 +47,7 @@ async function createTeam(req, res) {
 
     if (volunteerIds.length) {
       const volunteers = await client.query(
-        `SELECT user_id FROM users WHERE user_id = ANY($1::int[]) AND LOWER(role) = 'volunteer'`,
+        VOLUNTEERS_BY_IDS,
         [volunteerIds]
       );
       if (volunteers.rowCount !== volunteerIds.length) {
@@ -56,7 +56,7 @@ async function createTeam(req, res) {
       }
 
       const assigned = await client.query(
-        'SELECT user_id FROM team_members WHERE user_id = ANY($1::int[])',
+        MEMBERSHIPS_BY_IDS,
         [volunteerIds]
       );
       if (assigned.rowCount) {
@@ -66,20 +66,17 @@ async function createTeam(req, res) {
     }
 
     const teamResult = await client.query(
-      `INSERT INTO teams (team_name, team_type, status, leader_id)
-       VALUES ($1, $2, 'pending_approval', $3)
-       RETURNING team_id, team_name, team_type, status, leader_id`,
+      INSERT_TEAM,
       [team_name.trim(), String(team_type).toLowerCase(), req.user.user_id]
     );
     const team = teamResult.rows[0];
     await client.query(
-      `INSERT INTO team_members (team_id, user_id, member_role) VALUES ($1, $2, 'leader')`,
+      INSERT_LEADER_MEMBER,
       [team.team_id, req.user.user_id]
     );
     if (volunteerIds.length) {
       await client.query(
-        `INSERT INTO team_members (team_id, user_id, member_role)
-         SELECT $1, unnest($2::int[]), 'member'`,
+        INSERT_MEMBER_ROWS,
         [team.team_id, volunteerIds]
       );
     }
@@ -97,13 +94,9 @@ async function createTeam(req, res) {
 
 async function listTeams(req, res, mode = 'mine') {
   try {
-    const filters = {
-      mine: `WHERE t.team_id IN (SELECT team_id FROM team_members WHERE user_id = $1) OR t.leader_id = $1`,
-      pending: `WHERE LOWER(t.status) = 'pending_approval'`,
-      all: ``,
-    }[mode];
+    const filters = TEAM_FILTERS[mode];
     const values = mode === 'mine' ? [req.user.user_id] : [];
-    const result = await pool.query(`${teamsQuery} ${filters} GROUP BY t.team_id, leader.name ORDER BY t.team_id DESC`, values);
+    const result = await pool.query(`${TEAMS_QUERY} ${filters} ${TEAMS_GROUP_ORDER}`, values);
     return res.json({ teams: result.rows });
   } catch (err) {
     console.error('[teams/list] error:', err);
@@ -129,8 +122,7 @@ async function reviewTeam(req, res) {
   try {
     await client.query('BEGIN');
     const result = await client.query(
-      `UPDATE teams SET status = $1, approved_by_admin_id = $2 WHERE team_id = $3
-       RETURNING team_id, team_name, team_type, status, leader_id, approved_by_admin_id`,
+      UPDATE_TEAM_STATUS,
       [status, req.user.user_id, req.params.id]
     );
     if (!result.rows[0]) {
@@ -138,7 +130,7 @@ async function reviewTeam(req, res) {
       return res.status(404).json({ message: 'Team not found' });
     }
     if (status === 'rejected') {
-      await client.query('DELETE FROM team_members WHERE team_id = $1', [req.params.id]);
+      await client.query(DELETE_MEMBERS_BY_TEAM, [req.params.id]);
     }
     await client.query('COMMIT');
     return res.json({ team: result.rows[0] });
@@ -155,14 +147,12 @@ async function leaveTeam(req, res) {
   const { id } = req.params;
   try {
     const result = await pool.query(
-      `DELETE FROM team_members
-       WHERE team_id = $1 AND user_id = $2 AND LOWER(member_role) = 'member'
-       RETURNING team_id`,
+      DELETE_MEMBER_ROW,
       [id, req.user.user_id]
     );
     if (!result.rows[0]) {
       const isLeader = await pool.query(
-        `SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2 AND LOWER(member_role) = 'leader'`,
+        LEADER_ROW_BY_TEAM,
         [id, req.user.user_id]
       );
       if (isLeader.rowCount) {
@@ -183,15 +173,14 @@ async function disbandTeam(req, res) {
   try {
     await client.query('BEGIN');
     const result = await client.query(
-      `UPDATE teams SET status = 'disbanded' WHERE team_id = $1 AND leader_id = $2 AND status <> 'disbanded'
-       RETURNING team_id, team_name, team_type, status, leader_id`,
+      DISBAND_TEAM,
       [id, req.user.user_id]
     );
     if (!result.rows[0]) {
       await client.query('ROLLBACK');
       return res.status(404).json({ message: 'Team not found or you are not its leader' });
     }
-    await client.query('DELETE FROM team_members WHERE team_id = $1', [id]);
+    await client.query(DELETE_MEMBERS_BY_TEAM, [id]);
     await client.query('COMMIT');
     return res.json({ team: result.rows[0], message: 'Team disbanded' });
   } catch (err) {

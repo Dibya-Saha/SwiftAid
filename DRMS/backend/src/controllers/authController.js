@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
+const { INSERT_USER, SELECT_USER_BY_EMAIL, UPDATE_PASSWORD_HASH, SELECT_USER_BY_ID } = require('../sqls/authSqls');
 
 const ALLOWED_ROLES = ['admin', 'donor', 'team', 'volunteer'];
 const SALT_ROUNDS = 10;
@@ -42,9 +43,7 @@ async function register(req, res) {
     const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
 
     const result = await pool.query(
-       `INSERT INTO users (name, email, password_hash, role, phone)
-        VALUES ($1, $2, $3, $4, $5)
-       RETURNING user_id, name AS full_name, email, LOWER(role) AS role, phone`,
+      INSERT_USER,
       [full_name, email, password_hash, role, phone || null]
     );
 
@@ -72,8 +71,7 @@ async function login(req, res) {
 
   try {
     const result = await pool.query(
-      `SELECT user_id, name AS full_name, email, password_hash, LOWER(role) AS role, phone
-       FROM users WHERE email = $1`,
+      SELECT_USER_BY_EMAIL,
       [email]
     );
 
@@ -92,7 +90,7 @@ async function login(req, res) {
     // Upgrade legacy plaintext passwords after a successful login.
     if (!isBcryptHash(user.password_hash)) {
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-      await pool.query('UPDATE users SET password_hash = $1 WHERE user_id = $2', [
+      await pool.query(UPDATE_PASSWORD_HASH, [
         passwordHash,
         user.user_id,
       ]);
@@ -120,7 +118,7 @@ async function me(req, res) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const result = await pool.query(
-      `SELECT user_id, name AS full_name, email, LOWER(role) AS role, phone FROM users WHERE user_id = $1`,
+      SELECT_USER_BY_ID,
       [decoded.user_id]
     );
 

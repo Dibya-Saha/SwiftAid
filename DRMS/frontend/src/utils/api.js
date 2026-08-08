@@ -1,16 +1,21 @@
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = '/api';
 
 async function request(path, options = {}) {
   const token = localStorage.getItem('drms_token');
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
+      },
+    });
+  } catch {
+    throw new Error('Cannot reach the API server. Make sure "npm run dev" is running and the backend is fully started.');
+  }
 
   const data = await res.json().catch(() => ({}));
 
