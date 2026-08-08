@@ -17,7 +17,7 @@ const TEAMS_QUERY = `
 const TEAMS_GROUP_ORDER = 'GROUP BY t.team_id, leader.name ORDER BY t.team_id DESC';
 
 const TEAM_FILTERS = {
-  mine: 'WHERE t.team_id IN (SELECT team_id FROM team_members WHERE user_id = $1) OR t.leader_id = $1',
+  mine: "WHERE LOWER(t.status) <> 'rejected' AND (t.team_id IN (SELECT team_id FROM team_members WHERE user_id = $1) OR t.leader_id = $1)",
   pending: "WHERE LOWER(t.status) = 'pending_approval'",
   all: '',
 };
@@ -48,7 +48,8 @@ const DELETE_MEMBER_ROW = `DELETE FROM team_members
 
 const LEADER_ROW_BY_TEAM = `SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2 AND LOWER(member_role) = 'leader'`;
 
-const DISBAND_TEAM = `UPDATE teams SET status = 'disbanded' WHERE team_id = $1 AND leader_id = $2 AND status <> 'disbanded'
+const DISBAND_TEAM = `UPDATE teams SET status = 'disbanded' WHERE team_id = $1 AND leader_id = $2
+  AND LOWER(status) IN ('pending_approval', 'approved')
   RETURNING team_id, team_name, team_type, status, leader_id`;
 
 module.exports = {

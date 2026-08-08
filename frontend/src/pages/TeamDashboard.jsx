@@ -24,7 +24,10 @@ export default function TeamDashboard() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
-  const isInTeam = teams.some((team) => String(team.status).toLowerCase() !== 'disbanded');
+  const isInTeam = teams.some((team) => {
+    const status = String(team.status).toLowerCase();
+    return status !== 'disbanded' && status !== 'rejected';
+  });
 
   async function submit(event) {
     event.preventDefault(); setError(''); setMessage('');
@@ -70,7 +73,7 @@ export default function TeamDashboard() {
             <button className="btn-primary" type="submit">Submit for approval</button>
           </form>)}
         </div>
-        <div className="module-section compact-section"><div className="section-heading"><div><div className="eyebrow">My teams</div><h2>Memberships</h2></div></div>{!teams.length ? <div className="empty-state">You are not part of a team yet.</div> : <div className="team-grid">{teams.map((team) => { const isDisbanded = String(team.status).toLowerCase() === 'disbanded'; return <div className="info-card" key={team.team_id}><div className="eyebrow">{team.team_type}</div><h3>{team.team_name}</h3><span className={`status-badge status-${String(team.status).toLowerCase()}`}>{team.status.replace('_', ' ')}</span>{isDisbanded ? <p className="muted">This team has been disbanded. All members were released.</p> : <div className="member-list">{team.members.map((member) => <span key={member.user_id}>{member.name} · {member.role}</span>)}</div>}{!isDisbanded && team.leader_id === currentUserId && <button className="btn-danger" type="button" onClick={() => disband(team.team_id)}>Disband team</button>}</div>; })}</div>}</div>
+        <div className="module-section compact-section"><div className="section-heading"><div><div className="eyebrow">My teams</div><h2>Memberships</h2></div></div>{!teams.length ? <div className="empty-state">You are not part of a team yet.</div> : <div className="team-grid">{teams.map((team) => { const status = String(team.status).toLowerCase(); const isDisbanded = status === 'disbanded'; const isRejected = status === 'rejected'; return <div className="info-card" key={team.team_id}><div className="eyebrow">{team.team_type}</div><h3>{team.team_name}</h3><span className={`status-badge status-${status}`}>{team.status.replace('_', ' ')}</span>{isDisbanded || isRejected ? <p className="muted">{isRejected ? 'This team was rejected. All members were released.' : 'This team has been disbanded. All members were released.'}</p> : <div className="member-list">{team.members.map((member) => <span key={member.user_id}>{member.name} · {member.role}</span>)}</div>}{!isDisbanded && !isRejected && team.leader_id === currentUserId && <button className="btn-danger" type="button" onClick={() => disband(team.team_id)}>Disband team</button>}</div>; })}</div>}</div>
       </div>
       <DisasterList />
     </DashboardShell>
