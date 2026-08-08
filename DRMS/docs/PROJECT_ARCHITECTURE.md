@@ -67,7 +67,7 @@ Routes are mounted under `/api`:
 |---|---|---|
 | `/api/auth` | `authRoutes.js` | `POST /register`, `POST /login`, `GET /me` |
 | `/api/disasters` | `disasterRoutes.js` | `GET /`, `POST /`, `PATCH /:id/status` |
-| `/api/teams` | `teamRoutes.js` | `POST /`, `GET /mine`, `GET /pending`, `POST /:id/approve`, `POST /:id/reject` |
+| `/api/teams` | `teamRoutes.js` | `POST /`, `GET /mine`, `GET /pending`, `POST /:id/approve`, `POST /:id/reject`, `DELETE /:id/members/me`, `DELETE /:id` |
 | `/api/users` | `userRoutes.js` | `GET /volunteers` |
 
 ## Controller Responsibilities
@@ -75,7 +75,7 @@ Routes are mounted under `/api`:
 - `authController.js`: validates registration and login, hashes or verifies passwords, signs JWTs, and returns the current profile.
 - `userController.js`: lists unassigned users whose role is volunteer.
 - `disasterController.js`: creates disasters and reusable locations in a transaction, lists disasters with locations, and updates status.
-- `teamController.js`: creates teams and members transactionally, lists memberships or pending teams, and records admin approval or rejection.
+- `teamController.js`: creates teams and members transactionally with single-team enforcement, lists memberships or pending teams, records admin approval or rejection, handles volunteer resignation, and handles leader disbanding.
 
 ## Database Access Pattern
 

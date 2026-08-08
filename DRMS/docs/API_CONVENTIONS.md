@@ -35,6 +35,8 @@ The frontend centralizes requests in `frontend/src/utils/api.js`.
 | `GET` | `/teams/pending` | List teams awaiting review |
 | `POST` | `/teams/:id/approve` | Approve a team |
 | `POST` | `/teams/:id/reject` | Reject a team |
+| `DELETE` | `/teams/:id/members/me` | Resign the caller from a team |
+| `DELETE` | `/teams/:id` | Leader disbands their own team |
 
 ## Controller Responsibilities
 

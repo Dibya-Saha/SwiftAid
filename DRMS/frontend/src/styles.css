@@ -1,4 +1,4 @@
-/* ==========================================================
+  /* ==========================================================
    DRMS design tokens
    Palette: night-operations control room, not a marketing page.
    Amber = the one alert/action color. Everything else stays quiet.
@@ -212,6 +212,44 @@ button {
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-secondary {
+  width: 100%;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 13px;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn-danger {
+  width: 100%;
+  background: transparent;
+  color: #e0504a;
+  border: 1px solid #e0504a;
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 13px;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-danger:hover {
+  background: #e0504a;
+  color: #fff;
 }
 
 .btn-link {

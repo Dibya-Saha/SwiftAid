@@ -48,3 +48,9 @@ export const fetchPendingTeams = () => request('/teams/pending');
 
 export const reviewTeam = (id, action) =>
   request(`/teams/${id}/${action}`, { method: 'POST' });
+
+export const resignFromTeam = (teamId) =>
+  request(`/teams/${teamId}/members/me`, { method: 'DELETE' });
+
+export const disbandTeam = (teamId) =>
+  request(`/teams/${teamId}`, { method: 'DELETE' });

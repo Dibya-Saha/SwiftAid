@@ -34,11 +34,14 @@
 
 - Team creation by team-role users
 - Supported team types
-- Volunteer selection
+- Volunteer selection (free volunteers only)
 - Automatic leader and member rows
 - Pending approval state
 - Admin approval and rejection
 - Team membership listing
+- Single-team membership enforcement
+- Volunteer resignation
+- Leader team disbanding
 
 ## Suggested Implementation Order
 

@@ -16,6 +16,8 @@ The database stores role values as text. The current application uses lowercase 
 | Select available volunteers | Yes, through team review UI | Yes | No | No |
 | View pending teams | Yes | No | No | No |
 | Approve or reject teams | Yes | No | No | No |
+| Disband an owned team | No | Yes | No | No |
+| Resign from a team | No | No | Yes | No |
 | View available volunteers API | Yes | Yes | Yes | Yes |
 
 ## Current Endpoint Access
@@ -33,6 +35,8 @@ The database stores role values as text. The current application uses lowercase 
 | `GET /api/teams/pending` | Authenticated `admin` |
 | `POST /api/teams/:id/approve` | Authenticated `admin` |
 | `POST /api/teams/:id/reject` | Authenticated `admin` |
+| `DELETE /api/teams/:id/members/me` | Authenticated `volunteer` |
+| `DELETE /api/teams/:id` | Authenticated `team` |
 | `GET /api/users/volunteers` | Any authenticated user |
 
 ## Dashboard Access

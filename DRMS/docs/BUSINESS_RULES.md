@@ -27,13 +27,17 @@ Status values and workflow behavior below distinguish what is implemented in the
 - Supported team types are `medical`, `rescue`, `logistics`, `distribution`, and `general`.
 - The creator becomes the leader and is inserted into `team_members` with role `leader`.
 - Selected users must have role `volunteer` and cannot already belong to a team.
+- One person may belong to only one team at a time. This is enforced in the `createTeam` transaction and by the `team_members_user_id_key` unique index.
+- A team-role user who already belongs to a team (as leader or member) cannot create another team.
 - New teams start as `pending_approval`.
 - Only admins can view pending teams or approve/reject them.
 - The reviewing admin is stored in `approved_by_admin_id`.
+- A volunteer can resign from their team via `DELETE /api/teams/:id/members/me`; they become available and may join another team.
+- Team leaders cannot resign or transfer ownership. They can only disband their team via `DELETE /api/teams/:id`, which releases all members.
 
 **Future**
 
-- Team reassignment, removal, multi-team volunteer participation, and distribution status updates.
+- Team reassignment and distribution status updates.
 
 ## Location Handling Workflow
 

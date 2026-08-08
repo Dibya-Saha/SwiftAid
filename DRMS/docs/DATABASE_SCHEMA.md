@@ -193,11 +193,11 @@ The schema below is based on the supplied PostgreSQL table-creation SQL. `SERIAL
 | `user_id` | `INT` | Required foreign key to `users.user_id`, cascade delete |
 | `member_role` | `VARCHAR(40)` | Nullable |
 
-**Unique constraint:** (`team_id`, `user_id`).
+**Unique constraint:** (`team_id`, `user_id`). The `team_members_user_id_key` unique index on `user_id` (added by `backend/migrations/001_single_team_membership.sql`) enforces that one user can belong to at most one team.
 
 **Relationships:** Resolves the many-to-many relationship between users and teams.
 
-**Example usage:** A team leader has a `leader` row and selected volunteers have `member` rows.
+**Example usage:** A team leader has a `leader` row and selected volunteers have `member` rows. A volunteer resigns by deleting their `member` row; a leader disbands the team, which cascades to all membership rows.
 
 ## `relief_requests`
 

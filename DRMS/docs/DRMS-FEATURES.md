@@ -52,9 +52,12 @@
   - Team creator automatically becomes the leader
   - Volunteers are added to team_members as "member" role
   - Creator is added as "leader" role
+- **One team per person**: A leader can create only one team at a time, and a volunteer can join only one team. The leader cannot create another team until the current one is disbanded; a volunteer can rejoin after resigning.
 - **View my teams**: List of all teams they lead or belong to
   - Shows leader name, member count, member roster
   - Status badge indicates pending_approval, approved, rejected, etc.
+- **Disband a team**: The leader of a team can disband it, releasing all members
+- **Resign from a team**: A volunteer can resign from their team and becomes available again
 
 **For admins:**
 
@@ -70,6 +73,8 @@
 - `GET /api/teams/pending` — Admin only: awaiting review
 - `POST /api/teams/:id/approve` — Admin only
 - `POST /api/teams/:id/reject` — Admin only
+- `DELETE /api/teams/:id/members/me` — Volunteer only: resign from a team
+- `DELETE /api/teams/:id` — Team-role only: leader disbands their team
 
 **Supporting endpoint:**
 

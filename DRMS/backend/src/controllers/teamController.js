@@ -35,6 +35,16 @@ async function createTeam(req, res) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
+    const leaderMembership = await client.query(
+      'SELECT 1 FROM team_members WHERE user_id = $1',
+      [req.user.user_id]
+    );
+    if (leaderMembership.rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ message: 'You already belong to a team. Disband your current team before creating a new one' });
+    }
+
     if (volunteerIds.length) {
       const volunteers = await client.query(
         `SELECT user_id FROM users WHERE user_id = ANY($1::int[]) AND LOWER(role) = 'volunteer'`,
@@ -43,6 +53,15 @@ async function createTeam(req, res) {
       if (volunteers.rowCount !== volunteerIds.length) {
         await client.query('ROLLBACK');
         return res.status(400).json({ message: 'One or more selected users are not available volunteers' });
+      }
+
+      const assigned = await client.query(
+        'SELECT user_id FROM team_members WHERE user_id = ANY($1::int[])',
+        [volunteerIds]
+      );
+      if (assigned.rowCount) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ message: 'One or more selected volunteers already belong to a team' });
       }
     }
 
@@ -114,4 +133,48 @@ async function reviewTeam(req, res) {
   }
 }
 
-module.exports = { createTeam, listMine, listPending, reviewTeam, TEAM_TYPES };
+async function leaveTeam(req, res) {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `DELETE FROM team_members
+       WHERE team_id = $1 AND user_id = $2 AND LOWER(member_role) = 'member'
+       RETURNING team_id`,
+      [id, req.user.user_id]
+    );
+    if (!result.rows[0]) {
+      const isLeader = await pool.query(
+        `SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2 AND LOWER(member_role) = 'leader'`,
+        [id, req.user.user_id]
+      );
+      if (isLeader.rowCount) {
+        return res.status(409).json({ message: 'Team leaders cannot resign. Disband the team instead' });
+      }
+      return res.status(404).json({ message: 'You are not a member of this team' });
+    }
+    return res.json({ message: 'You have resigned from the team' });
+  } catch (err) {
+    console.error('[teams/leave] error:', err);
+    return res.status(500).json({ message: 'Failed to resign from team' });
+  }
+}
+
+async function disbandTeam(req, res) {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `DELETE FROM teams WHERE team_id = $1 AND leader_id = $2
+       RETURNING team_id`,
+      [id, req.user.user_id]
+    );
+    if (!result.rows[0]) {
+      return res.status(404).json({ message: 'Team not found or you are not its leader' });
+    }
+    return res.json({ message: 'Team disbanded' });
+  } catch (err) {
+    console.error('[teams/disband] error:', err);
+    return res.status(500).json({ message: 'Failed to disband team' });
+  }
+}
+
+module.exports = { createTeam, listMine, listPending, reviewTeam, leaveTeam, disbandTeam, TEAM_TYPES };
