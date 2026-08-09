@@ -225,6 +225,7 @@ export default function AdminDashboard() {
       sidebar={tabNav}
     >
       <div
+        key={activeTab}
         className="tab-content"
         role="tabpanel"
         id={`panel-${activeTab}`}

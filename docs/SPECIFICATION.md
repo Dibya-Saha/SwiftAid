@@ -41,10 +41,34 @@ frontend/src/
   components/              Shared dashboard, route, and disaster UI
   utils/api.js             Fetch wrapper and endpoint functions
   utils/auth.js            Local session and role-home helpers
-  styles.css               Global visual styles
+  styles.css               Global visual styles and reusable UI classes
 ```
 
 `App.jsx` maps `/admin`, `/donor`, `/team`, and `/volunteer` to role-protected dashboards. Shared dashboard UI calls `/api/auth/me` to refresh the profile.
+
+### Frontend Component Reuse
+
+New pages must reuse existing components and shared CSS before introducing new
+page-specific implementations. The current reusable frontend building blocks
+are:
+
+- `DashboardShell.jsx`: authenticated dashboard shell, topbar, profile, logout, and admin/default layouts.
+- `ProtectedRoute.jsx`: authentication and role protection for dashboard routes.
+- `DisasterList.jsx`: reusable disaster listing table and optional status editing.
+- `styles.css`: global design tokens, responsive layout classes, form controls, buttons, cards, banners, tables, badges, tabs, and page transitions.
+
+Common page composition should use `DashboardShell` with existing classes such
+as `.module-section`, `.section-heading`, `.info-card`, `.module-card`,
+`.form-grid`, `.field`, `.btn-primary`, `.btn-secondary`, `.data-table`,
+`.status-badge`, `.empty-state`, `.error-banner`, and `.success-banner`.
+
+Before adding a component or CSS rule, verify that an existing component or
+class cannot be reused. If a new pattern will be used by multiple pages, make
+it shared immediately rather than copying it into individual pages. New pages
+must preserve the established dark control-room theme, responsive behavior,
+spacing, and animation behavior. Avoid changing an existing shared class when
+the change would alter the appearance of current pages; use a clearly scoped
+modifier when a genuine variant is required.
 
 ### Request Flow
 

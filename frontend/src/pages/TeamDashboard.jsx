@@ -285,6 +285,7 @@ export default function TeamDashboard() {
       sidebar={tabNav}
     >
       <div
+        key={activeTab}
         className="tab-content"
         role="tabpanel"
         id={`panel-${activeTab}`}

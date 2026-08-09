@@ -395,6 +395,32 @@ Maintain existing:
 
 Do not redesign existing dashboards.
 
+## Component and Style Reuse
+
+Before creating a new page, inspect and reuse existing frontend components and
+styles. Do not create a duplicate component or page-specific CSS when an
+existing pattern already provides the required behavior.
+
+Use these shared components where applicable:
+
+- `frontend/src/components/DashboardShell.jsx` for authenticated dashboard layout, topbar, profile, and logout behavior.
+- `frontend/src/components/ProtectedRoute.jsx` for role-protected routes.
+- `frontend/src/components/DisasterList.jsx` for the shared disaster table and status controls.
+
+Reuse the shared classes in `frontend/src/styles.css` before adding new CSS:
+
+- Layout and content: `.dashboard-shell`, `.dashboard-content`, `.admin-layout`, `.admin-main`, `.module-section`, `.section-heading`, `.card-grid`, and `.team-grid`.
+- Containers: `.info-card`, `.module-card`, `.empty-state`, `.error-banner`, and `.success-banner`.
+- Forms and actions: `.field`, `.field-label`, `.form-grid`, `.button-row`, `.btn-primary`, `.btn-secondary`, `.btn-danger`, `.btn-ghost`, and `.btn-link`.
+- Data display: `.table-wrap`, `.data-table`, `.status-badge`, `.status-select`, `.role-pill`, `.count-badge`, `.member-list`, and `.member-chip`.
+- Navigation and motion: `.tab-nav`, `.tab-btn`, `.tab-content`, and `.page-transition`.
+
+When a new page needs a pattern that appears in more than one page, extract
+that pattern into a shared component or shared CSS class instead of copying it.
+Preserve the existing dark control-room visual language, spacing, responsive
+behavior, and animations. Add a new class only when an existing class cannot
+express the requirement without changing its established appearance.
+
 ---
 
 # Role Permissions
