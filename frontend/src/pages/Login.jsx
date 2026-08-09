@@ -30,28 +30,17 @@ export default function Login() {
 
   return (
     <div className="auth-shell">
+      {/* ── Left: Branding ── */}
       <aside className="auth-brand">
-        <div>
-          <div className="brand-mark">Coordination Access</div>
-          <h1 className="brand-title">
-            Disaster relief,
-            <br />
-            coordinated in real time.
-          </h1>
-          <p className="brand-sub">
-            One login, four roles. Sign in to reach the queue, shelter, and
-            distribution data that matters to your role.
-          </p>
-
-          <div className="access-badges">
-            <span className="access-badge"><span className="dot" />Admin</span>
-            <span className="access-badge"><span className="dot" />Donor</span>
-            <span className="access-badge"><span className="dot" />Team</span>
-            <span className="access-badge"><span className="dot" />Volunteer</span>
+        <div className="auth-brand__content">
+          <div className="swiftaid-logo">
+            <span className="swiftaid-logo__bolt swiftaid-logo__bolt--pulse">⚡</span>
+            <span className="swiftaid-logo__name swiftaid-logo__name--glow">SwiftAid</span>
           </div>
+          <h1 className="brand-title brand-title--fade">
+            Disaster relief,<br />coordinated in real time.
+          </h1>
         </div>
-
-        <div className="status-line">DRMS_LOCAL · connected to postgres:5432</div>
       </aside>
 
       <div className="auth-form-wrap">
