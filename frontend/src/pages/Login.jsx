@@ -32,7 +32,7 @@ export default function Login() {
     <div className="auth-shell">
       <aside className="auth-brand">
         <div>
-          <div className="brand-mark">DRMS · Coordination Access</div>
+          <div className="brand-mark">Coordination Access</div>
           <h1 className="brand-title">
             Disaster relief,
             <br />

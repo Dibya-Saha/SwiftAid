@@ -12,6 +12,7 @@ export default function DashboardShell({
   children,
   layout = 'default',
   sidebar = null,
+  hideHeader = false,
 }) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(getUser());
@@ -30,13 +31,7 @@ export default function DashboardShell({
   }
 
   const topbar = (
-    <header className="topbar">
-      <div className="topbar-left">
-        <div className="brand-mark">DRMS</div>
-        {layout === 'admin' && (
-          <span className="topbar-context">{eyebrow}</span>
-        )}
-      </div>
+    <header className="topbar topbar--end">
       <div className="topbar-right">
         {layout === 'admin' && (
           <span className="topbar-user">{profile?.full_name || profile?.email}</span>
@@ -58,12 +53,15 @@ export default function DashboardShell({
             <div className="admin-sidebar__label">Sections</div>
             {sidebar}
           </aside>
-          <main className="admin-main">
-            <header className="admin-page-header">
-              <h1>{heading}</h1>
-              <p className="lead">{lead}</p>
-              {error && <div className="error-banner">{error}</div>}
-            </header>
+          <main className={`admin-main${hideHeader ? ' admin-main--compact' : ''}`}>
+            {!hideHeader && (
+              <header className="admin-page-header">
+                <h1>{heading}</h1>
+                <p className="lead">{lead}</p>
+                {error && <div className="error-banner">{error}</div>}
+              </header>
+            )}
+            {hideHeader && error && <div className="error-banner">{error}</div>}
             {children}
           </main>
         </div>

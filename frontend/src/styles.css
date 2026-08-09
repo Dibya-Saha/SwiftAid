@@ -300,6 +300,10 @@ button {
   background: var(--panel);
 }
 
+.topbar--end {
+  justify-content: flex-end;
+}
+
 .topbar .brand-mark {
   margin: 0;
 }
@@ -308,16 +312,6 @@ button {
   display: flex;
   align-items: center;
   gap: 16px;
-}
-
-.topbar-context {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding-left: 16px;
-  border-left: 1px solid var(--border);
 }
 
 .topbar-user {
@@ -653,6 +647,10 @@ button {
   min-width: 0;
 }
 
+.admin-main--compact {
+  padding-top: 28px;
+}
+
 .admin-page-header {
   margin-bottom: 28px;
 }
@@ -748,6 +746,164 @@ button {
 
 .dashboard-shell--admin .module-section:first-of-type {
   margin-top: 0;
+}
+
+/* ---------- Team dashboard ---------- */
+.dashboard-shell--admin .team-form-card {
+  max-width: none;
+  width: 100%;
+}
+
+.team-form-card .form-grid {
+  margin-bottom: 0;
+}
+
+.selection-count {
+  float: right;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.team-volunteer-list {
+  border-radius: 6px;
+  background: var(--panel-alt);
+  max-height: 220px;
+  transition: border-color 0.2s ease;
+}
+
+.team-volunteer-list:focus-within {
+  border-color: rgba(242, 183, 5, 0.4);
+}
+
+.team-volunteer-list .checkbox-row {
+  cursor: pointer;
+  transition: background 0.18s ease, padding-left 0.18s ease;
+}
+
+.team-volunteer-list .checkbox-row:hover {
+  background: rgba(242, 183, 5, 0.06);
+}
+
+.team-volunteer-list .checkbox-row--selected {
+  background: rgba(242, 183, 5, 0.1);
+  padding-left: 16px;
+}
+
+.team-volunteer-empty {
+  display: block;
+  padding: 16px 12px;
+}
+
+.team-submit {
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.team-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.team-grid--cards {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.team-card {
+  animation: cardReveal 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 0.07s + 0.1s);
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.team-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(242, 183, 5, 0.35);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+.team-card--inactive {
+  opacity: 0.72;
+}
+
+.team-card--inactive:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--border);
+}
+
+.team-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.team-card__header .eyebrow {
+  margin-bottom: 0;
+}
+
+.team-card h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  margin: 4px 0 10px;
+}
+
+.team-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+
+.team-card__role {
+  color: var(--accent);
+  border: 1px solid rgba(242, 183, 5, 0.35);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.team-card__note {
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+
+.team-card .member-list {
+  margin: 0 0 16px;
+  gap: 6px;
+}
+
+.member-chip {
+  display: block;
+  padding: 6px 10px;
+  background: var(--panel-alt);
+  border-radius: 4px;
+  font-size: 12px;
+  transition: background 0.15s ease;
+}
+
+.team-card:hover .member-chip {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.team-card .btn-danger {
+  margin-top: auto;
+}
+
+@keyframes cardReveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes tabFadeIn {

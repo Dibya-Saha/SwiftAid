@@ -41,7 +41,7 @@ export default function Register() {
     <div className="auth-shell">
       <aside className="auth-brand">
         <div>
-          <div className="brand-mark">DRMS · New Access Request</div>
+          <div className="brand-mark">New Access Request</div>
           <h1 className="brand-title">
             Register for
             <br />
