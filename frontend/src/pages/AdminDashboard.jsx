@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import DashboardShell from '../components/DashboardShell';
 import DisasterList from '../components/DisasterList';
 import { createDisaster, fetchPendingTeams, fetchAllTeams, reviewTeam } from '../utils/api';
@@ -9,37 +9,10 @@ function statusLabel(status) {
   return String(status || '').replace('_', ' ');
 }
 
-export default function AdminDashboard() {
+const DisasterTab = ({ refreshKey }) => {
   const [form, setForm] = useState({ title: '', division: '', district: '', upazila: '', union: '' });
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [pendingTeams, setPendingTeams] = useState([]);
-  const [allTeams, setAllTeams] = useState([]);
-  const [statusFilter, setStatusFilter] = useState('all');
-
-  async function refreshAllTeams() {
-    try {
-      const { teams } = await fetchAllTeams();
-      setAllTeams(teams);
-    } catch { /* registry is secondary to pending review */ }
-  }
-
-  useEffect(() => {
-    fetchPendingTeams().then(({ teams }) => setPendingTeams(teams)).catch(() => {});
-    refreshAllTeams();
-  }, []);
-
-  async function handleReview(teamId, action) {
-    try {
-      await reviewTeam(teamId, action);
-      setPendingTeams((rows) => rows.filter((row) => row.team_id !== teamId));
-      await refreshAllTeams();
-    } catch (err) {
-      setIsError(true);
-      setMessage(err.message);
-    }
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,24 +20,16 @@ export default function AdminDashboard() {
       const res = await createDisaster(form);
       setIsError(false);
       setMessage(res.message || 'Disaster created successfully!');
-       setForm({ title: '', division: '', district: '', upazila: '', union: '' });
-       setRefreshKey((key) => key + 1);
+      setForm({ title: '', division: '', district: '', upazila: '', union: '' });
+      refreshKey.current++;
     } catch (err) {
       setIsError(true);
       setMessage(err.message);
     }
   };
 
-  const visibleTeams = statusFilter === 'all'
-    ? allTeams
-    : allTeams.filter((team) => String(team.status).toLowerCase() === statusFilter);
-
   return (
-    <DashboardShell
-      eyebrow="Admin console"
-      heading="Operations overview"
-      lead="Manage disaster records, locations, and relief operations."
-    >
+    <>
       <div className="info-card module-card">
         <p className="eyebrow">Create New Disaster</p>
 
@@ -117,8 +82,44 @@ export default function AdminDashboard() {
           </button>
         </form>
       </div>
-      <DisasterList canEdit refreshKey={refreshKey} />
+      <DisasterList canEdit refreshKey={refreshKey.current} />
+    </>
+  );
+};
 
+const TeamTab = () => {
+  const [pendingTeams, setPendingTeams] = useState([]);
+  const [allTeams, setAllTeams] = useState([]);
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  async function refreshAllTeams() {
+    try {
+      const { teams } = await fetchAllTeams();
+      setAllTeams(teams);
+    } catch { /* registry is secondary to pending review */ }
+  }
+
+  useEffect(() => {
+    fetchPendingTeams().then(({ teams }) => setPendingTeams(teams)).catch(() => {});
+    refreshAllTeams();
+  }, []);
+
+  async function handleReview(teamId, action) {
+    try {
+      await reviewTeam(teamId, action);
+      setPendingTeams((rows) => rows.filter((row) => row.team_id !== teamId));
+      await refreshAllTeams();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  const visibleTeams = statusFilter === 'all'
+    ? allTeams
+    : allTeams.filter((team) => String(team.status).toLowerCase() === statusFilter);
+
+  return (
+    <>
       <section className="module-section">
         <div className="section-heading">
           <div><div className="eyebrow">Approval queue</div><h2>Pending teams</h2></div>
@@ -170,6 +171,68 @@ export default function AdminDashboard() {
           </div>
         )}
       </section>
+    </>
+  );
+};
+
+export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState('disaster');
+  const refreshKey = useRef(0);
+
+  const tabs = [
+    { id: 'disaster', label: 'Disasters', icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    )},
+    { id: 'team', label: 'Teams', icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    )}
+  ];
+
+  const tabNav = (
+    <nav className="tab-nav" role="tablist" aria-label="Admin sections">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          role="tab"
+          aria-selected={activeTab === tab.id}
+          aria-controls={`panel-${tab.id}`}
+          id={`tab-${tab.id}`}
+          className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+          onClick={() => setActiveTab(tab.id)}
+        >
+          <span className="tab-icon">{tab.icon}</span>
+          <span>{tab.label}</span>
+        </button>
+      ))}
+    </nav>
+  );
+
+  return (
+    <DashboardShell
+      layout="admin"
+      eyebrow="Admin console"
+      heading="Operations overview"
+      lead="Manage disaster records, locations, and relief operations."
+      sidebar={tabNav}
+    >
+      <div
+        className="tab-content"
+        role="tabpanel"
+        id={`panel-${activeTab}`}
+        aria-labelledby={`tab-${activeTab}`}
+      >
+        {activeTab === 'disaster' && <DisasterTab refreshKey={refreshKey} />}
+        {activeTab === 'team' && <TeamTab />}
+      </div>
     </DashboardShell>
   );
 }

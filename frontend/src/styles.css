@@ -304,6 +304,27 @@ button {
   margin: 0;
 }
 
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar-context {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-left: 16px;
+  border-left: 1px solid var(--border);
+}
+
+.topbar-user {
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .topbar-right {
   display: flex;
   align-items: center;
@@ -595,6 +616,216 @@ button {
   accent-color: var(--accent);
 }
 
+/* ---------- Admin layout ---------- */
+.dashboard-shell--admin {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+
+.admin-sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 57px);
+}
+
+.admin-sidebar__label {
+  padding: 20px 24px 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin-main {
+  padding: 32px 40px 48px;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.admin-page-header {
+  margin-bottom: 28px;
+}
+
+.admin-page-header h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  margin: 0 0 8px;
+}
+
+.admin-page-header .lead {
+  color: var(--muted);
+  margin: 0;
+  max-width: 60ch;
+}
+
+.tab-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 12px 24px;
+  flex: 1;
+}
+
+.tab-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.tab-btn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+  transform: scaleY(0);
+  transition: transform 0.2s ease;
+}
+
+.tab-btn:hover {
+  color: var(--text);
+  background: var(--panel-alt);
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  background: rgba(242, 183, 5, 0.08);
+}
+
+.tab-btn.active::before {
+  transform: scaleY(1);
+}
+
+.tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.tab-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.tab-content {
+  animation: tabFadeIn 0.25s ease;
+}
+
+.dashboard-shell--admin .module-card {
+  max-width: none;
+  margin-top: 0;
+}
+
+.dashboard-shell--admin .module-section:first-of-type {
+  margin-top: 0;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Remove horizontal scrollbar from tables */
+.table-wrap {
+  overflow-x: hidden;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 100%;
+  background: var(--panel);
+  table-layout: fixed;
+}
+
+.data-table th,
+.data-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 960px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+  .admin-sidebar {
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .admin-sidebar__label {
+    padding: 16px 18px 8px;
+  }
+  .tab-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 18px 16px;
+  }
+  .tab-btn {
+    flex: 1;
+    min-width: 140px;
+    justify-content: center;
+  }
+  .tab-btn::before {
+    left: 8px;
+    right: 8px;
+    top: auto;
+    bottom: 0;
+    width: auto;
+    height: 3px;
+    border-radius: 2px 2px 0 0;
+    transform: scaleX(0);
+  }
+  .tab-btn.active::before {
+    transform: scaleX(1);
+  }
+  .admin-main {
+    padding: 24px 18px 32px;
+  }
+}
+
 @media (max-width: 760px) {
   .dashboard-content {
     padding: 32px 18px;
@@ -605,5 +836,9 @@ button {
   .module-layout,
   .form-grid {
     grid-template-columns: 1fr;
+  }
+  .tab-btn {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 }
