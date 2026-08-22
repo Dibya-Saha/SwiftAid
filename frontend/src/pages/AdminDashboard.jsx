@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import DashboardShell from '../components/DashboardShell';
 import DisasterList from '../components/DisasterList';
+import Select from '../components/Select';
 import {
   createDisaster,
   fetchDisasters,
@@ -467,9 +468,9 @@ const ItemTab = () => {
         <form onSubmit={submit}>
           <div className="form-grid">
             <div className="field"><label>Item name</label><input required value={form.name} onChange={updateField('name')} placeholder="Rice" /></div>
-            <div className="field"><label>Unit</label><select required value={form.unit} onChange={updateField('unit')}><option value="">Select unit</option>{ITEM_UNITS.map((unit) => <option key={unit} value={unit}>{unit}</option>)}</select></div>
+            <div className="field"><label>Unit</label><Select required value={form.unit} onChange={updateField('unit')} placeholder="Select unit" options={[{ value: '', label: 'Select unit' }, ...ITEM_UNITS.map((unit) => ({ value: unit, label: unit }))]} /></div>
           </div>
-          <div className="field"><label>Category</label><select required value={form.category} onChange={updateField('category')}><option value="">Select category</option>{ITEM_CATEGORIES.map((category) => <option key={category} value={category}>{category.charAt(0).toUpperCase() + category.slice(1)}</option>)}</select></div>
+          <div className="field"><label>Category</label><Select required value={form.category} onChange={updateField('category')} placeholder="Select category" options={[{ value: '', label: 'Select category' }, ...ITEM_CATEGORIES.map((category) => ({ value: category, label: category.charAt(0).toUpperCase() + category.slice(1) }))]} /></div>
           <div className="button-row">
             <button type="submit" className="btn-primary">{editingId ? 'Update item' : 'Create item'}</button>
             {editingId && <button type="button" className="btn-ghost" onClick={resetForm}>Cancel</button>}
@@ -567,11 +568,11 @@ const InventoryTab = () => {
         {message && <div className={isError ? 'error-banner' : 'success-banner'}>{message}</div>}
         <form onSubmit={submit}>
           <div className="form-grid">
-            <div className="field"><label>Warehouse</label><select required value={form.warehouse_id} onChange={updateField('warehouse_id')}><option value="">Select warehouse</option>{warehouses.map((warehouse) => <option key={warehouse.warehouse_id} value={warehouse.warehouse_id}>{warehouse.name}</option>)}</select></div>
-            <div className="field"><label>Item</label><select required value={form.item_id} onChange={updateField('item_id')}><option value="">Select item</option>{items.map((item) => <option key={item.item_id} value={item.item_id}>{item.name} ({item.unit})</option>)}</select></div>
+            <div className="field"><label>Warehouse</label><Select required value={form.warehouse_id} onChange={updateField('warehouse_id')} placeholder="Select warehouse" options={[{ value: '', label: 'Select warehouse' }, ...warehouses.map((warehouse) => ({ value: warehouse.warehouse_id, label: warehouse.name }))]} /></div>
+            <div className="field"><label>Item</label><Select required value={form.item_id} onChange={updateField('item_id')} placeholder="Select item" options={[{ value: '', label: 'Select item' }, ...items.map((item) => ({ value: item.item_id, label: `${item.name} (${item.unit})` }))]} /></div>
           </div>
           <div className="form-grid">
-            <div className="field"><label>Operation</label><select value={form.operation} onChange={updateField('operation')}><option value="add">Add stock</option><option value="remove">Remove stock</option></select></div>
+            <div className="field"><label>Operation</label><Select value={form.operation} onChange={updateField('operation')} options={[{ value: 'add', label: 'Add stock' }, { value: 'remove', label: 'Remove stock' }]} /></div>
             <div className="field"><label>Quantity</label><input required min="1" type="number" value={form.quantity} onChange={updateField('quantity')} placeholder="Enter a positive amount" /></div>
           </div>
           <button type="submit" className="btn-primary">{form.operation === 'add' ? 'Add stock' : 'Remove stock'}</button>
@@ -676,13 +677,13 @@ const VictimTab = () => {
           </div>
           <div className="form-grid">
             <div className="field"><label>Gender</label><input value={form.gender} onChange={updateField('gender')} placeholder="Female" /></div>
-            <div className="field"><label>Priority</label><select value={form.priority_level} onChange={updateField('priority_level')}><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+            <div className="field"><label>Priority</label><Select value={form.priority_level} onChange={updateField('priority_level')} options={[{ value: 'low', label: 'Low' }, { value: 'normal', label: 'Normal' }, { value: 'high', label: 'High' }, { value: 'critical', label: 'Critical' }]} /></div>
           </div>
           <div className="form-grid">
-            <div className="field"><label>Status</label><select value={form.status} onChange={updateField('status')}><option value="registered">Registered</option><option value="relocated">Relocated</option></select></div>
-            <div className="field"><label>Disaster</label><select required value={form.disaster_id} onChange={updateField('disaster_id')}><option value="">Select disaster</option>{disasters.map((disaster) => <option key={disaster.disaster_id} value={disaster.disaster_id}>{disaster.title}</option>)}</select></div>
+            <div className="field"><label>Status</label><Select value={form.status} onChange={updateField('status')} options={[{ value: 'registered', label: 'Registered' }, { value: 'relocated', label: 'Relocated' }]} /></div>
+            <div className="field"><label>Disaster</label><Select required value={form.disaster_id} onChange={updateField('disaster_id')} placeholder="Select disaster" options={[{ value: '', label: 'Select disaster' }, ...disasters.map((disaster) => ({ value: disaster.disaster_id, label: disaster.title }))]} /></div>
           </div>
-          <div className="field"><label>Shelter (optional)</label><select value={form.shelter_id} onChange={updateField('shelter_id')}><option value="">Unassigned</option>{shelters.map((shelter) => <option key={shelter.shelter_id} value={shelter.shelter_id}>{shelter.name} ({shelter.capacity} capacity)</option>)}</select></div>
+          <div className="field"><label>Shelter (optional)</label><Select value={form.shelter_id} onChange={updateField('shelter_id')} placeholder="Unassigned" options={[{ value: '', label: 'Unassigned' }, ...shelters.map((shelter) => ({ value: shelter.shelter_id, label: `${shelter.name} (${shelter.capacity} capacity)` }))]} /></div>
           <div className="button-row"><button type="submit" className="btn-primary">{editingId ? 'Update victim' : 'Register victim'}</button>{editingId && <button type="button" className="btn-ghost" onClick={resetForm}>Cancel</button>}</div>
         </form>
       </div>
@@ -777,9 +778,12 @@ const TeamTab = () => {
       <section className="module-section">
         <div className="section-heading">
           <div><div className="eyebrow">Team registry</div><h2>All teams</h2></div>
-          <select className="status-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            {TEAM_STATUSES.map((status) => <option key={status} value={status}>{statusLabel(status)}</option>)}
-          </select>
+          <Select
+            variant="pill"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            options={TEAM_STATUSES.map((status) => ({ value: status, label: statusLabel(status) }))}
+          />
         </div>
         {!visibleTeams.length ? <div className="empty-state">No teams match this filter.</div> : (
           <div className="table-wrap">

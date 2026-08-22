@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Select from './Select';
 import { fetchDisasters, updateDisasterStatus } from '../utils/api';
 
 const STATUSES = ['ACTIVE', 'CLOSED'];
@@ -61,14 +62,13 @@ export default function DisasterList({ canEdit = false, refreshKey = 0 }) {
                   <td>{new Date(disaster.start_date).toLocaleDateString()}</td>
                   <td>
                     {canEdit ? (
-                      <select
-                        className="status-select"
+                      <Select
+                        variant="pill"
                         value={disaster.status}
                         disabled={updating === disaster.disaster_id}
                         onChange={(event) => changeStatus(disaster.disaster_id, event.target.value)}
-                      >
-                        {STATUSES.map((status) => <option key={status}>{status}</option>)}
-                      </select>
+                        options={STATUSES}
+                      />
                     ) : <span className={`status-badge status-${String(disaster.status).toLowerCase()}`}>{disaster.status}</span>}
                   </td>
                 </tr>

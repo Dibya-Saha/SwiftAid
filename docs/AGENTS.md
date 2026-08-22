@@ -29,7 +29,7 @@ Before implementing ANY feature, read the following files in order:
 
 1. README.md
 2. docs/DATABASE_SCHEMA.md
-3. docs/SPECIFICATION.md
+3. docs/AGENTS.md (this file)
 4. backend/src/server.js
 5. backend/src/db.js
 6. backend/src/middleware/auth.js
@@ -71,6 +71,14 @@ Never start coding before reading these files.
 - Team approval workflow
 - Team rejection workflow
 
+### Operational Modules
+
+- Shelter CRUD and capacity validation
+- Warehouse CRUD and shared location handling
+- Item catalog CRUD with controlled categories and units
+- Victim registration, disaster linkage, shelter assignment, and capacity checks
+- Inventory listing with transactional Add stock and Remove stock operations
+
 ### Locations
 
 - Automatically created during disaster registration
@@ -78,11 +86,11 @@ Never start coding before reading these files.
 
 ---
 
-# Future Modules
+# Remaining Modules
 
-The following database modules already exist in the schema but are not fully implemented: shelters, warehouses, items, inventory, victims, donations, relief_requests, request_items, and distributions.
+The remaining modules are donations, relief requests, request items, and distributions.
 
-See [SPECIFICATION.md](SPECIFICATION.md) (Feature Roadmap section) for the suggested implementation order and pattern. Follow the same architecture and conventions used by existing modules.
+See the Completed Modules, Remaining Modules, Business Rules, and Roadmap sections in this file for the implementation order and pattern. Follow the same architecture and conventions used by existing modules.
 
 ---
 
@@ -406,6 +414,7 @@ Use these shared components where applicable:
 - `frontend/src/components/DashboardShell.jsx` for authenticated dashboard layout, topbar, profile, and logout behavior.
 - `frontend/src/components/ProtectedRoute.jsx` for role-protected routes.
 - `frontend/src/components/DisasterList.jsx` for the shared disaster table and status controls.
+- `frontend/src/components/Select.jsx` for animated, keyboard-accessible dropdowns.
 
 Reuse the shared classes in `frontend/src/styles.css` before adding new CSS:
 
@@ -425,7 +434,8 @@ express the requirement without changing its established appearance.
 
 # Role Permissions
 
-The authoritative capability and endpoint-access matrix is maintained in [SPECIFICATION.md](SPECIFICATION.md) (Role Permissions section).
+The authoritative capability and endpoint-access matrix is maintained in this
+file (Detailed Specification, Role Permissions section).
 
 - ADMIN: disasters, team review/approval, and future operational management.
 - TEAM: create and manage teams.
@@ -525,6 +535,154 @@ Commit small, focused changes.
 
 ---
 
+# Detailed Specification
+
+## Architecture and Request Flow
+
+DRMS is a two-process application: `backend/` is a Node.js and Express REST
+API, `frontend/` is a React 18 application served by Vite, and PostgreSQL is
+the persistent data store. The root `npm run dev` script starts the backend on
+port `5000` and frontend on port `5173` concurrently.
+
+The request flow is:
+
+1. A page calls an exported function from `frontend/src/utils/api.js`.
+2. `request()` prefixes `/api`, uses the Vite proxy, serializes JSON, and adds the bearer token.
+3. Express parses JSON and matches the mounted route.
+4. Middleware authenticates the request and checks the role where required.
+5. The controller validates input and runs parameterized SQL through `db.js`.
+6. The frontend parses JSON, updates React state, or displays the error message.
+
+Authentication flow:
+
+1. Registration sends `POST /api/auth/register`.
+2. The controller hashes the password with bcrypt and creates the user.
+3. Login sends `POST /api/auth/login`.
+4. The controller verifies the password and signs a JWT containing `user_id`, `full_name`, `email`, and `role`.
+5. The frontend stores the token and user in `localStorage` as `drms_token` and `drms_user`.
+6. Later requests send `Authorization: Bearer <jwt>`.
+7. `requireAuth` verifies the token and `requireRole` enforces permissions.
+
+## Current Routes
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/auth/register` | Create an account |
+| `POST` | `/auth/login` | Authenticate an account |
+| `GET` | `/auth/me` | Load the authenticated profile |
+| `GET` | `/disasters` | List disasters and locations |
+| `POST` | `/disasters` | Admin creates a disaster |
+| `PATCH` | `/disasters/:id/status` | Admin updates disaster status |
+| `GET` | `/users/volunteers` | List available volunteers |
+| `POST` | `/teams` | Team user creates a team |
+| `GET` | `/teams` | Admin lists all teams |
+| `GET` | `/teams/mine` | List the caller's teams |
+| `GET` | `/teams/pending` | Admin lists pending teams |
+| `POST` | `/teams/:id/approve` | Admin approves a team; accepts an optional remark |
+| `POST` | `/teams/:id/reject` | Admin rejects a team; requires a remark |
+| `DELETE` | `/teams/:id/members/me` | Volunteer resigns from a team |
+| `DELETE` | `/teams/:id` | Team leader disbands a team |
+| `GET/POST` | `/shelters` | List shelters or admin creates one |
+| `GET/PATCH/DELETE` | `/shelters/:id` | View or admin-manage one shelter |
+| `GET/POST` | `/warehouses` | List warehouses or admin creates one |
+| `GET/PATCH/DELETE` | `/warehouses/:id` | View or admin-manage one warehouse |
+| `GET/POST` | `/items` | List items or admin creates one |
+| `GET/PATCH/DELETE` | `/items/:id` | View or admin-manage one item |
+| `GET/POST` | `/victims` | List victims or admin registers one |
+| `GET/PATCH/DELETE` | `/victims/:id` | View or admin-manage one victim |
+| `GET` | `/inventory` | List inventory |
+| `GET` | `/inventory/:id` | View one inventory record |
+| `POST` | `/inventory/adjust` | Admin adds or removes stock |
+| `DELETE` | `/inventory/:id` | Admin deletes an inventory record |
+
+## Business Rules
+
+### Disaster
+
+- Only an authenticated admin can create a disaster.
+- `title`, `division`, and `district` are required; `upazila` and `union` are optional.
+- New disasters start as `ACTIVE`; the application supports `ACTIVE` and `CLOSED`.
+- Any authenticated user may list disasters.
+
+### Teams
+
+- Only `team` users can register teams.
+- Supported types are `medical`, `rescue`, `logistics`, `distribution`, and `general`.
+- A team starts as `pending_approval`.
+- The creator becomes the leader; selected users must be available volunteers.
+- One person may belong to only one team.
+- Admin approval stores `approved_by_admin_id` and an optional `review_remark`.
+- Rejection requires a remark and releases all team members.
+- Volunteers can resign; leaders must disband the team instead.
+
+### Shelters and Warehouses
+
+- Admins manage CRUD; authenticated users may list and view records.
+- Both modules reuse or create locations transactionally.
+- Shelter capacity must be a positive integer.
+
+### Items
+
+- Admins manage the item catalog; authenticated users may list and view items.
+- Categories and units use the controlled values documented in `DATABASE_SCHEMA.md`.
+- The backend validates values even when the frontend dropdown is bypassed.
+
+### Victims
+
+- Admins manage victim records.
+- Each victim is linked to a disaster and may be assigned to a shelter.
+- Victim statuses are `registered` and `relocated`.
+- Shelter assignment locks the shelter row and prevents capacity overflow.
+- Correlated subqueries and `CASE` return occupancy and shelter availability.
+
+### Inventory
+
+- Inventory connects one warehouse and one item with a unique pair.
+- Admins use positive quantities with either Add stock or Remove stock.
+- Both operations are transactional.
+- Removal is rejected if it would make stock negative.
+
+## Role Permissions
+
+| Capability | ADMIN | TEAM | VOLUNTEER | DONOR |
+|---|--:|--:|--:|--:|
+| Access own dashboard | Yes | Yes | Yes | Yes |
+| View disasters | Yes | Yes | Yes | Yes |
+| Create or update disasters | Yes | No | No | No |
+| Create and manage teams | No | Yes | No | No |
+| Approve or reject teams | Yes | No | No | No |
+| View shelters, warehouses, items, victims, and inventory | Yes | Yes | Yes | Yes |
+| Manage shelters, warehouses, items, victims, and inventory | Yes | No | No | No |
+| Resign from a team | No | No | Yes | No |
+
+All future permissions must be enforced in backend middleware, not only by
+hiding frontend controls.
+
+## Roadmap, Dependencies, and Risks
+
+### Completed
+
+- Authentication, users, disasters, locations, teams, shelters, warehouses, items, victims, and inventory.
+
+### To Do
+
+1. Donations: donor item submission, donation history, and transactional inventory update.
+2. Relief requests: shelter requests, request items, approvals, and quantity validation.
+3. Distributions: assign approved requests to warehouses and approved teams; decrement inventory transactionally.
+
+Dependencies and risks:
+
+- Shelters must exist before victims and relief requests can be assigned.
+- Warehouses and items must exist before inventory or donations.
+- Inventory must be correct before distributions can decrement stock.
+- Team approval should precede team assignment to a distribution.
+- Remaining workflow status values require consistent validation.
+- The supplied schema uses `users.full_name`, while current authentication SQL uses `users.name` and aliases it to `full_name`; resolve this mismatch before extending user features.
+
+For every remaining module, implement the backend controller, route and
+middleware, frontend API functions, role-appropriate UI, permission tests, and
+transaction/error tests. Use one focused Git commit per feature.
+
 # Final Rule
 
 Do not invent schema.
@@ -536,7 +694,7 @@ Do not invent API behavior.
 Always use:
 
 - DATABASE_SCHEMA.md
-- SPECIFICATION.md
+- AGENTS.md
 
 as the source of truth.
 

@@ -125,7 +125,8 @@
 }
 
 .auth-shell--animated .auth-card .field input,
-.auth-shell--animated .auth-card .field select {
+.auth-shell--animated .auth-card .field select,
+.auth-shell--animated .auth-card .select-trigger {
   background: var(--panel-alt);
 }
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registerUser } from '../utils/api';
+import Select from '../components/Select';
 import '../styles/auth-background.css';
 
 const ROLES = ['admin', 'donor', 'team', 'volunteer'];
@@ -89,13 +90,15 @@ export default function Register() {
 
             <div className="field">
               <label htmlFor="role">Role</label>
-              <select id="role" value={form.role} onChange={update('role')}>
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {r.charAt(0).toUpperCase() + r.slice(1)}
-                  </option>
-                ))}
-              </select>
+              <Select
+                id="role"
+                value={form.role}
+                onChange={update('role')}
+                options={ROLES.map((role) => ({
+                  value: role,
+                  label: role.charAt(0).toUpperCase() + role.slice(1),
+                }))}
+              />
             </div>
 
             <div className="field">

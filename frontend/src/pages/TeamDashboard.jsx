@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import DashboardShell from '../components/DashboardShell';
 import DisasterList from '../components/DisasterList';
+import Select from '../components/Select';
 import { createTeam, fetchMyTeams, fetchVolunteers, disbandTeam } from '../utils/api';
 import { getUser } from '../utils/auth';
 
@@ -86,14 +87,11 @@ function RegisterTab({ form, setForm, volunteers, selected, toggleVolunteer, sub
             </div>
             <div className="field">
               <label>Team type</label>
-              <select
+              <Select
                 value={form.team_type}
-                onChange={(e) => setForm({ ...form, team_type: e.target.value })}
-              >
-                {['medical', 'rescue', 'logistics', 'distribution', 'general'].map((type) => (
-                  <option key={type}>{type}</option>
-                ))}
-              </select>
+                onChange={(event) => setForm({ ...form, team_type: event.target.value })}
+                options={['medical', 'rescue', 'logistics', 'distribution', 'general']}
+              />
             </div>
           </div>
           <label className="field-label">

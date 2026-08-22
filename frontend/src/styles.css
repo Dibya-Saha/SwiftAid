@@ -384,7 +384,8 @@ button {
 
 .field input,
 .field select,
-.field textarea {
+.field textarea,
+.select-trigger {
   width: 100%;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -397,7 +398,9 @@ button {
 
 .field input:focus,
 .field select:focus,
-.field textarea:focus {
+.field textarea:focus,
+.select-control--open .select-trigger,
+.select-trigger:focus-visible {
   border-color: var(--accent);
   outline: none;
 }
@@ -608,6 +611,144 @@ button {
   font-size: 10px;
 }
 
+/* Animated custom select */
+.select-control {
+  position: relative;
+  width: 100%;
+}
+
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease,
+    background-color 0.22s ease;
+}
+
+.select-control--open .select-trigger {
+  box-shadow: 0 0 0 1px rgba(242, 183, 5, 0.18);
+  transform: translateY(-1px);
+}
+
+.select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-value--placeholder {
+  color: var(--muted);
+}
+
+.select-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), color 0.22s ease;
+}
+
+.select-chevron svg {
+  width: 16px;
+  height: 16px;
+}
+
+.select-control--open .select-chevron {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+
+.select-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(20, 40, 44, 0.96);
+  box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.85);
+  max-height: 240px;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px) scale(0.98);
+  transform-origin: top center;
+  pointer-events: none;
+  transition:
+    opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0.24s ease;
+}
+
+.select-menu--open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.select-option {
+  padding: 10px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.select-option--active,
+.select-option:hover {
+  background: rgba(242, 183, 5, 0.1);
+  color: var(--accent);
+}
+
+.select-option--selected {
+  background: rgba(242, 183, 5, 0.14);
+  color: var(--accent);
+}
+
+.select-native-fallback {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.select-control--pill .select-trigger {
+  width: auto;
+  min-width: 120px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: var(--panel-alt);
+}
+
+.select-control--pill .select-menu {
+  min-width: 160px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .select-trigger,
+  .select-chevron,
+  .select-menu,
+  .select-option {
+    transition: none;
+  }
+}
+
 /* Tables */
 .table-wrap {
   overflow-x: auto;
@@ -677,6 +818,14 @@ button {
   padding-right: 14px;
 }
 
+.data-table td:has(.select-control) {
+  overflow: visible;
+}
+
+.section-heading .select-control {
+  flex-shrink: 0;
+}
+
 .data-table td:has(.button-row) .button-row {
   display: inline-flex;
   justify-content: flex-end;
@@ -702,10 +851,6 @@ button {
   border-radius: 4px;
   margin-bottom: 16px;
   max-height: 190px;
-  overflow-y: auto;
-}
-
-.checkbox-row {
   display: flex;
   gap: 10px;
   padding: 10px 12px;

@@ -1,0 +1,178 @@
+import { useEffect, useId, useRef, useState } from 'react';
+
+function ChevronIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M5 7.5 10 12.5 15 7.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export default function Select({
+  value,
+  onChange,
+  options = [],
+  placeholder = 'Select an option',
+  required = false,
+  disabled = false,
+  id,
+  className = '',
+  variant = 'default',
+}) {
+  const generatedId = useId();
+  const selectId = id || generatedId;
+  const rootRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  const normalizedOptions = options.map((option) => (
+    typeof option === 'string' ? { value: option, label: option } : option
+  ));
+
+  const selectedOption = normalizedOptions.find((option) => String(option.value) === String(value));
+  const displayLabel = selectedOption?.label ?? placeholder;
+
+  function emitChange(nextValue) {
+    onChange?.({ target: { value: nextValue } });
+  }
+
+  function closeMenu() {
+    setOpen(false);
+    setActiveIndex(-1);
+  }
+
+  function selectOption(option) {
+    emitChange(option.value);
+    closeMenu();
+  }
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function handlePointerDown(event) {
+      if (!rootRef.current?.contains(event.target)) {
+        closeMenu();
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === 'Escape') {
+        closeMenu();
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const selectedIndex = normalizedOptions.findIndex((option) => String(option.value) === String(value));
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
+  }, [open, normalizedOptions, value]);
+
+  function handleTriggerKeyDown(event) {
+    if (disabled) return;
+
+    if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      setOpen(true);
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setOpen(true);
+    }
+  }
+
+  function handleListKeyDown(event) {
+    if (!open) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveIndex((index) => (index + 1) % normalizedOptions.length);
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveIndex((index) => (index - 1 + normalizedOptions.length) % normalizedOptions.length);
+    }
+
+    if (event.key === 'Enter' && activeIndex >= 0) {
+      event.preventDefault();
+      selectOption(normalizedOptions[activeIndex]);
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeMenu();
+    }
+  }
+
+  const isPlaceholder = !selectedOption;
+
+  return (
+    <div
+      ref={rootRef}
+      className={`select-control select-control--${variant} ${open ? 'select-control--open' : ''} ${className}`.trim()}
+    >
+      <button
+        id={selectId}
+        type="button"
+        className="select-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => !disabled && setOpen((current) => !current)}
+        onKeyDown={handleTriggerKeyDown}
+      >
+        <span className={`select-value ${isPlaceholder ? 'select-value--placeholder' : ''}`}>
+          {displayLabel}
+        </span>
+        <span className="select-chevron"><ChevronIcon /></span>
+      </button>
+
+      <ul
+        className={`select-menu ${open ? 'select-menu--open' : ''}`}
+        role="listbox"
+        aria-labelledby={selectId}
+        tabIndex={-1}
+        onKeyDown={handleListKeyDown}
+      >
+        {normalizedOptions.map((option, index) => {
+          const isSelected = String(option.value) === String(value);
+          const isActive = index === activeIndex;
+
+          return (
+            <li
+              key={`${option.value}-${option.label}`}
+              role="option"
+              aria-selected={isSelected}
+              className={`select-option ${isSelected ? 'select-option--selected' : ''} ${isActive ? 'select-option--active' : ''}`}
+              onMouseEnter={() => setActiveIndex(index)}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => selectOption(option)}
+            >
+              {option.label}
+            </li>
+          );
+        })}
+      </ul>
+
+      {required && (
+        <input
+          tabIndex={-1}
+          aria-hidden="true"
+          className="select-native-fallback"
+          value={value ?? ''}
+          required
+          onChange={() => {}}
+        />
+      )}
+    </div>
+  );
+}
