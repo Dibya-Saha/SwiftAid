@@ -5,7 +5,7 @@
 1. Shelters
 2. Warehouses and items
 3. Victims (implemented)
-4. Inventory
+4. Inventory (implemented)
 5. Donations
 6. Relief requests
 7. Distributions
@@ -58,3 +58,9 @@ appropriate for derived shelter occupancy, for example counting victims whose
 `shelter_id` equals the outer shelter row. PostgreSQL functions should only be
 introduced when the same transaction-safe calculation is reused by multiple
 modules.
+
+## Inventory Module
+
+Inventory records connect one warehouse to one item and track a non-negative
+quantity. Admins can apply positive or negative adjustments transactionally.
+The database upsert rejects an adjustment that would make stock negative.

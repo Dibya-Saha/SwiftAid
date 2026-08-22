@@ -86,6 +86,17 @@ export const updateVictim = (id, payload) =>
 export const deleteVictim = (id) =>
   request(`/victims/${id}`, { method: 'DELETE' });
 
+export const fetchInventory = () => request('/inventory');
+
+export const adjustInventory = (payload) =>
+  request('/inventory/adjust', { method: 'POST', body: JSON.stringify(payload) });
+
+export const updateInventory = (id, payload) =>
+  request(`/inventory/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+
+export const deleteInventory = (id) =>
+  request(`/inventory/${id}`, { method: 'DELETE' });
+
 export const fetchVolunteers = () => request('/users/volunteers');
 
 export const createTeam = (payload) =>

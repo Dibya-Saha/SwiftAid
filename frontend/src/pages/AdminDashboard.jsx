@@ -23,6 +23,10 @@ import {
   createVictim,
   updateVictim,
   deleteVictim,
+  fetchInventory,
+  adjustInventory,
+  updateInventory,
+  deleteInventory,
 } from '../utils/api';
 
 const TEAM_STATUSES = ['all', 'pending_approval', 'approved', 'rejected', 'disbanded'];
@@ -36,6 +40,7 @@ const EMPTY_ITEM = { name: '', category: '', unit: '' };
 const EMPTY_VICTIM = {
   full_name: '', date_of_birth: '', gender: '', priority_level: 'normal', status: 'registered', disaster_id: '', shelter_id: '',
 };
+const EMPTY_INVENTORY = { warehouse_id: '', item_id: '', quantity: '' };
 
 function statusLabel(status) {
   return String(status || '').replace('_', ' ');
@@ -498,6 +503,104 @@ const ItemTab = () => {
   );
 };
 
+const InventoryTab = () => {
+  const [form, setForm] = useState(EMPTY_INVENTORY);
+  const [inventory, setInventory] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [items, setItems] = useState([]);
+  const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
+
+  async function refresh() {
+    const [{ inventory: inventoryRows }, { warehouses: warehouseRows }, { items: itemRows }] = await Promise.all([
+      fetchInventory(), fetchWarehouses(), fetchItems(),
+    ]);
+    setInventory(inventoryRows);
+    setWarehouses(warehouseRows);
+    setItems(itemRows);
+  }
+
+  useEffect(() => {
+    refresh().catch((err) => {
+      setIsError(true);
+      setMessage(err.message);
+    });
+  }, []);
+
+  function updateField(field) {
+    return (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    setMessage('');
+    try {
+      const result = await adjustInventory(form);
+      setIsError(false);
+      setMessage(result.message || 'Inventory adjusted successfully.');
+      setForm(EMPTY_INVENTORY);
+      await refresh();
+    } catch (err) {
+      setIsError(true);
+      setMessage(err.message);
+    }
+  }
+
+  async function setQuantity(record) {
+    const value = window.prompt(`Set quantity for ${record.item_name}:`, String(record.quantity));
+    if (value === null) return;
+    const quantity = Number(value);
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      setIsError(true);
+      setMessage('Quantity must be a non-negative integer.');
+      return;
+    }
+    try {
+      await updateInventory(record.inventory_id, { quantity });
+      setIsError(false);
+      setMessage('Inventory quantity updated.');
+      await refresh();
+    } catch (err) {
+      setIsError(true);
+      setMessage(err.message);
+    }
+  }
+
+  async function removeInventory(id) {
+    if (!window.confirm('Delete this inventory record?')) return;
+    try {
+      const result = await deleteInventory(id);
+      setIsError(false);
+      setMessage(result.message || 'Inventory record deleted.');
+      await refresh();
+    } catch (err) {
+      setIsError(true);
+      setMessage(err.message);
+    }
+  }
+
+  return (
+    <>
+      <div className="info-card module-card">
+        <p className="eyebrow">Adjust stock</p>
+        {message && <div className={isError ? 'error-banner' : 'success-banner'}>{message}</div>}
+        <form onSubmit={submit}>
+          <div className="form-grid">
+            <div className="field"><label>Warehouse</label><select required value={form.warehouse_id} onChange={updateField('warehouse_id')}><option value="">Select warehouse</option>{warehouses.map((warehouse) => <option key={warehouse.warehouse_id} value={warehouse.warehouse_id}>{warehouse.name}</option>)}</select></div>
+            <div className="field"><label>Item</label><select required value={form.item_id} onChange={updateField('item_id')}><option value="">Select item</option>{items.map((item) => <option key={item.item_id} value={item.item_id}>{item.name} ({item.unit})</option>)}</select></div>
+          </div>
+          <div className="field"><label>Quantity adjustment</label><input required type="number" value={form.quantity} onChange={updateField('quantity')} placeholder="Use positive to add, negative to remove" /></div>
+          <button type="submit" className="btn-primary">Apply adjustment</button>
+        </form>
+      </div>
+      <section className="module-section">
+        <div className="section-heading"><div><div className="eyebrow">Stock register</div><h2>Warehouse inventory</h2></div><span className="count-badge">{inventory.length} records</span></div>
+        {!inventory.length ? <div className="empty-state">No inventory records have been created yet.</div> : <div className="table-wrap"><table className="data-table"><thead><tr><th>Warehouse</th><th>Item</th><th>Category</th><th>Quantity</th><th>Actions</th></tr></thead><tbody>{inventory.map((record) => <tr key={record.inventory_id}><td>{record.warehouse_name}</td><td><strong>{record.item_name}</strong><small>#{record.item_id}</small></td><td>{record.category || '—'}</td><td>{record.quantity} {record.unit}</td><td><div className="button-row"><button className="btn-ghost" onClick={() => setQuantity(record)}>Set quantity</button><button className="btn-danger" onClick={() => removeInventory(record.inventory_id)}>Delete</button></div></td></tr>)}</tbody></table></div>}
+      </section>
+    </>
+  );
+};
+
 const VictimTab = () => {
   const [form, setForm] = useState(EMPTY_VICTIM);
   const [victims, setVictims] = useState([]);
@@ -770,6 +873,14 @@ export default function AdminDashboard() {
         <path d="M16 3.13a4 4 0 0 1 0 7.75" />
         <path d="M22 21v-2a7 7 0 0 0-5-6.7" />
       </svg>
+    )},
+    { id: 'inventory', label: 'Inventory', icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 7h18" />
+        <path d="M5 7v13h14V7" />
+        <path d="M8 7V4h8v3" />
+        <path d="M8 11h8M8 15h5" />
+      </svg>
     )}
   ];
 
@@ -813,6 +924,7 @@ export default function AdminDashboard() {
         {activeTab === 'warehouse' && <WarehouseTab />}
         {activeTab === 'item' && <ItemTab />}
         {activeTab === 'victim' && <VictimTab />}
+        {activeTab === 'inventory' && <InventoryTab />}
       </div>
     </DashboardShell>
   );
