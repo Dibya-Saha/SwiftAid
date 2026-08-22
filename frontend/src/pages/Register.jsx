@@ -38,31 +38,7 @@ export default function Register() {
   }
 
   return (
-    <div className="auth-shell">
-      <aside className="auth-brand">
-        <div>
-          <div className="brand-mark">New Access Request</div>
-          <h1 className="brand-title">
-            Register for
-            <br />
-            coordination access.
-          </h1>
-          <p className="brand-sub">
-            Every account is tied to one role. That role decides which queue
-            you land on after signing in — nothing more, nothing less.
-          </p>
-
-          <div className="access-badges">
-            <span className="access-badge"><span className="dot" />Admin</span>
-            <span className="access-badge"><span className="dot" />Donor</span>
-            <span className="access-badge"><span className="dot" />Team</span>
-            <span className="access-badge"><span className="dot" />Volunteer</span>
-          </div>
-        </div>
-
-        <div className="status-line">Row written to users table on submit</div>
-      </aside>
-
+    <div className="auth-shell auth-shell--solo">
       <div className="auth-form-wrap">
         <div className="auth-card">
           <h2>Create account</h2>
