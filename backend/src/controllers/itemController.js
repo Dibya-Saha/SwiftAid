@@ -7,16 +7,21 @@ const {
   DELETE_ITEM,
 } = require('../sqls/itemSqls');
 
+const ITEM_UNITS = ['kg', 'g', 'litre', 'ml', 'piece', 'pack', 'box', 'bag', 'bottle', 'can', 'set', 'pair', 'tablet'];
+const ITEM_CATEGORIES = ['food', 'water', 'medical', 'hygiene', 'clothing', 'shelter', 'rescue', 'logistics', 'other'];
+
 function readItemInput(body) {
   return {
     name: typeof body.name === 'string' ? body.name.trim() : '',
-    category: typeof body.category === 'string' ? body.category.trim() : '',
+    category: typeof body.category === 'string' ? body.category.trim().toLowerCase() : '',
     unit: typeof body.unit === 'string' ? body.unit.trim() : '',
   };
 }
 
 function validateItemInput(input) {
   if (!input.name || !input.unit) return 'Name and unit are required';
+  if (!ITEM_UNITS.includes(input.unit)) return `unit must be one of: ${ITEM_UNITS.join(', ')}`;
+  if (!ITEM_CATEGORIES.includes(input.category)) return `category must be one of: ${ITEM_CATEGORIES.join(', ')}`;
   return null;
 }
 
@@ -84,4 +89,4 @@ async function deleteItem(req, res) {
   }
 }
 
-module.exports = { listItems, getItem, createItem, updateItem, deleteItem };
+module.exports = { listItems, getItem, createItem, updateItem, deleteItem, ITEM_UNITS, ITEM_CATEGORIES };

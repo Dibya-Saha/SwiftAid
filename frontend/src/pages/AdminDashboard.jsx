@@ -37,6 +37,8 @@ const EMPTY_WAREHOUSE = {
   name: '', division: '', district: '', upazila: '', union: '',
 };
 const EMPTY_ITEM = { name: '', category: '', unit: '' };
+const ITEM_CATEGORIES = ['food', 'water', 'medical', 'hygiene', 'clothing', 'shelter', 'rescue', 'logistics', 'other'];
+const ITEM_UNITS = ['kg', 'g', 'litre', 'ml', 'piece', 'pack', 'box', 'bag', 'bottle', 'can', 'set', 'pair', 'tablet'];
 const EMPTY_VICTIM = {
   full_name: '', date_of_birth: '', gender: '', priority_level: 'normal', status: 'registered', disaster_id: '', shelter_id: '',
 };
@@ -466,9 +468,9 @@ const ItemTab = () => {
         <form onSubmit={submit}>
           <div className="form-grid">
             <div className="field"><label>Item name</label><input required value={form.name} onChange={updateField('name')} placeholder="Rice" /></div>
-            <div className="field"><label>Unit</label><input required value={form.unit} onChange={updateField('unit')} placeholder="kg" /></div>
+            <div className="field"><label>Unit</label><select required value={form.unit} onChange={updateField('unit')}><option value="">Select unit</option>{ITEM_UNITS.map((unit) => <option key={unit} value={unit}>{unit}</option>)}</select></div>
           </div>
-          <div className="field"><label>Category</label><input value={form.category} onChange={updateField('category')} placeholder="Food" /></div>
+          <div className="field"><label>Category</label><select required value={form.category} onChange={updateField('category')}><option value="">Select category</option>{ITEM_CATEGORIES.map((category) => <option key={category} value={category}>{category.charAt(0).toUpperCase() + category.slice(1)}</option>)}</select></div>
           <div className="button-row">
             <button type="submit" className="btn-primary">{editingId ? 'Update item' : 'Create item'}</button>
             {editingId && <button type="button" className="btn-ghost" onClick={resetForm}>Cancel</button>}

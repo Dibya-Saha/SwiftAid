@@ -64,3 +64,8 @@ modules.
 Inventory records connect one warehouse to one item and track a non-negative
 quantity. Admins can apply positive or negative adjustments transactionally.
 The database upsert rejects an adjustment that would make stock negative.
+
+Items use controlled category and unit values. Categories include food, water,
+medical, hygiene, clothing, shelter, rescue, logistics, and other. Units
+include kg, g, litre, ml, piece, pack, box, bag, bottle, can, set, pair, and
+tablet. The backend validates these values for both item creation and updates.
