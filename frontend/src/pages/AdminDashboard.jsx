@@ -25,7 +25,6 @@ import {
   deleteVictim,
   fetchInventory,
   adjustInventory,
-  updateInventory,
   deleteInventory,
 } from '../utils/api';
 
@@ -42,7 +41,7 @@ const ITEM_UNITS = ['kg', 'g', 'litre', 'ml', 'piece', 'pack', 'box', 'bag', 'bo
 const EMPTY_VICTIM = {
   full_name: '', date_of_birth: '', gender: '', priority_level: 'normal', status: 'registered', disaster_id: '', shelter_id: '',
 };
-const EMPTY_INVENTORY = { warehouse_id: '', item_id: '', quantity: '' };
+const EMPTY_INVENTORY = { warehouse_id: '', item_id: '', operation: 'add', quantity: '' };
 
 function statusLabel(status) {
   return String(status || '').replace('_', ' ');
@@ -548,26 +547,6 @@ const InventoryTab = () => {
     }
   }
 
-  async function setQuantity(record) {
-    const value = window.prompt(`Set quantity for ${record.item_name}:`, String(record.quantity));
-    if (value === null) return;
-    const quantity = Number(value);
-    if (!Number.isInteger(quantity) || quantity < 0) {
-      setIsError(true);
-      setMessage('Quantity must be a non-negative integer.');
-      return;
-    }
-    try {
-      await updateInventory(record.inventory_id, { quantity });
-      setIsError(false);
-      setMessage('Inventory quantity updated.');
-      await refresh();
-    } catch (err) {
-      setIsError(true);
-      setMessage(err.message);
-    }
-  }
-
   async function removeInventory(id) {
     if (!window.confirm('Delete this inventory record?')) return;
     try {
@@ -591,13 +570,16 @@ const InventoryTab = () => {
             <div className="field"><label>Warehouse</label><select required value={form.warehouse_id} onChange={updateField('warehouse_id')}><option value="">Select warehouse</option>{warehouses.map((warehouse) => <option key={warehouse.warehouse_id} value={warehouse.warehouse_id}>{warehouse.name}</option>)}</select></div>
             <div className="field"><label>Item</label><select required value={form.item_id} onChange={updateField('item_id')}><option value="">Select item</option>{items.map((item) => <option key={item.item_id} value={item.item_id}>{item.name} ({item.unit})</option>)}</select></div>
           </div>
-          <div className="field"><label>Quantity adjustment</label><input required type="number" value={form.quantity} onChange={updateField('quantity')} placeholder="Use positive to add, negative to remove" /></div>
-          <button type="submit" className="btn-primary">Apply adjustment</button>
+          <div className="form-grid">
+            <div className="field"><label>Operation</label><select value={form.operation} onChange={updateField('operation')}><option value="add">Add stock</option><option value="remove">Remove stock</option></select></div>
+            <div className="field"><label>Quantity</label><input required min="1" type="number" value={form.quantity} onChange={updateField('quantity')} placeholder="Enter a positive amount" /></div>
+          </div>
+          <button type="submit" className="btn-primary">{form.operation === 'add' ? 'Add stock' : 'Remove stock'}</button>
         </form>
       </div>
       <section className="module-section">
         <div className="section-heading"><div><div className="eyebrow">Stock register</div><h2>Warehouse inventory</h2></div><span className="count-badge">{inventory.length} records</span></div>
-        {!inventory.length ? <div className="empty-state">No inventory records have been created yet.</div> : <div className="table-wrap"><table className="data-table"><thead><tr><th>Warehouse</th><th>Item</th><th>Category</th><th>Quantity</th><th>Actions</th></tr></thead><tbody>{inventory.map((record) => <tr key={record.inventory_id}><td>{record.warehouse_name}</td><td><strong>{record.item_name}</strong><small>#{record.item_id}</small></td><td>{record.category || '—'}</td><td>{record.quantity} {record.unit}</td><td><div className="button-row"><button className="btn-ghost" onClick={() => setQuantity(record)}>Set quantity</button><button className="btn-danger" onClick={() => removeInventory(record.inventory_id)}>Delete</button></div></td></tr>)}</tbody></table></div>}
+        {!inventory.length ? <div className="empty-state">No inventory records have been created yet.</div> : <div className="table-wrap"><table className="data-table"><thead><tr><th>Warehouse</th><th>Item</th><th>Category</th><th>Quantity</th><th>Actions</th></tr></thead><tbody>{inventory.map((record) => <tr key={record.inventory_id}><td>{record.warehouse_name}</td><td><strong>{record.item_name}</strong><small>#{record.item_id}</small></td><td>{record.category || '—'}</td><td>{record.quantity} {record.unit}</td><td><button className="btn-danger" onClick={() => removeInventory(record.inventory_id)}>Delete</button></td></tr>)}</tbody></table></div>}
       </section>
     </>
   );
@@ -697,7 +679,7 @@ const VictimTab = () => {
             <div className="field"><label>Priority</label><select value={form.priority_level} onChange={updateField('priority_level')}><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="critical">Critical</option></select></div>
           </div>
           <div className="form-grid">
-            <div className="field"><label>Status</label><select value={form.status} onChange={updateField('status')}><option value="registered">Registered</option><option value="sheltered">Sheltered</option><option value="relocated">Relocated</option><option value="safe">Safe</option></select></div>
+            <div className="field"><label>Status</label><select value={form.status} onChange={updateField('status')}><option value="registered">Registered</option><option value="relocated">Relocated</option></select></div>
             <div className="field"><label>Disaster</label><select required value={form.disaster_id} onChange={updateField('disaster_id')}><option value="">Select disaster</option>{disasters.map((disaster) => <option key={disaster.disaster_id} value={disaster.disaster_id}>{disaster.title}</option>)}</select></div>
           </div>
           <div className="field"><label>Shelter (optional)</label><select value={form.shelter_id} onChange={updateField('shelter_id')}><option value="">Unassigned</option>{shelters.map((shelter) => <option key={shelter.shelter_id} value={shelter.shelter_id}>{shelter.name} ({shelter.capacity} capacity)</option>)}</select></div>

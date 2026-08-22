@@ -19,17 +19,17 @@ const GET_INVENTORY = `SELECT
 const FIND_WAREHOUSE = 'SELECT warehouse_id FROM warehouses WHERE warehouse_id = $1';
 const FIND_ITEM = 'SELECT item_id FROM items WHERE item_id = $1';
 
-const ADJUST_INVENTORY = `INSERT INTO inventory (warehouse_id, item_id, quantity)
-  SELECT $1, $2, $3
-  WHERE $3 >= 0
+const ADD_INVENTORY = `INSERT INTO inventory (warehouse_id, item_id, quantity)
+  VALUES ($1, $2, $3)
   ON CONFLICT (warehouse_id, item_id)
   DO UPDATE SET quantity = inventory.quantity + EXCLUDED.quantity
-  WHERE inventory.quantity + EXCLUDED.quantity >= 0
   RETURNING inventory_id, warehouse_id, item_id, quantity`;
 
-const UPDATE_INVENTORY = `UPDATE inventory
-  SET quantity = $1
-  WHERE inventory_id = $2
+const REMOVE_INVENTORY = `UPDATE inventory
+  SET quantity = quantity - $3
+  WHERE warehouse_id = $1
+    AND item_id = $2
+    AND quantity >= $3
   RETURNING inventory_id, warehouse_id, item_id, quantity`;
 
 const DELETE_INVENTORY = `DELETE FROM inventory
@@ -41,7 +41,7 @@ module.exports = {
   GET_INVENTORY,
   FIND_WAREHOUSE,
   FIND_ITEM,
-  ADJUST_INVENTORY,
-  UPDATE_INVENTORY,
+  ADD_INVENTORY,
+  REMOVE_INVENTORY,
   DELETE_INVENTORY,
 };

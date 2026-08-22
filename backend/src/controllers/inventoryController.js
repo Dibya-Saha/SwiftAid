@@ -4,8 +4,8 @@ const {
   GET_INVENTORY,
   FIND_WAREHOUSE,
   FIND_ITEM,
-  ADJUST_INVENTORY,
-  UPDATE_INVENTORY,
+  ADD_INVENTORY,
+  REMOVE_INVENTORY,
   DELETE_INVENTORY,
 } = require('../sqls/inventorySqls');
 
@@ -38,9 +38,13 @@ async function getInventory(req, res) {
 async function adjustInventory(req, res) {
   const warehouseId = integer(req.body.warehouse_id);
   const itemId = integer(req.body.item_id);
-  const delta = integer(req.body.quantity);
-  if (warehouseId === null || itemId === null || delta === null || delta === 0) {
-    return res.status(400).json({ message: 'warehouse_id, item_id, and a non-zero integer quantity are required' });
+  const quantity = integer(req.body.quantity);
+  const operation = String(req.body.operation || '').toLowerCase();
+  if (warehouseId === null || itemId === null || quantity === null || quantity <= 0) {
+    return res.status(400).json({ message: 'warehouse_id, item_id, and a positive integer quantity are required' });
+  }
+  if (!['add', 'remove'].includes(operation)) {
+    return res.status(400).json({ message: 'operation must be either add or remove' });
   }
 
   const client = await pool.connect();
@@ -56,7 +60,8 @@ async function adjustInventory(req, res) {
       await client.query('ROLLBACK');
       return res.status(404).json({ message: 'Item not found' });
     }
-    const result = await client.query(ADJUST_INVENTORY, [warehouseId, itemId, delta]);
+    const query = operation === 'add' ? ADD_INVENTORY : REMOVE_INVENTORY;
+    const result = await client.query(query, [warehouseId, itemId, quantity]);
     if (!result.rows[0]) {
       await client.query('ROLLBACK');
       return res.status(409).json({ message: 'Insufficient stock for this adjustment' });
@@ -72,21 +77,6 @@ async function adjustInventory(req, res) {
   }
 }
 
-async function updateInventory(req, res) {
-  const quantity = integer(req.body.quantity);
-  if (quantity === null || quantity < 0) {
-    return res.status(400).json({ message: 'quantity must be a non-negative integer' });
-  }
-  try {
-    const result = await pool.query(UPDATE_INVENTORY, [quantity, req.params.id]);
-    if (!result.rows[0]) return res.status(404).json({ message: 'Inventory record not found' });
-    return res.json({ inventory: result.rows[0] });
-  } catch (err) {
-    console.error('[inventory/update] error:', err);
-    return res.status(500).json({ message: 'Failed to update inventory' });
-  }
-}
-
 async function deleteInventory(req, res) {
   try {
     const result = await pool.query(DELETE_INVENTORY, [req.params.id]);
@@ -98,4 +88,4 @@ async function deleteInventory(req, res) {
   }
 }
 
-module.exports = { listInventory, getInventory, adjustInventory, updateInventory, deleteInventory };
+module.exports = { listInventory, getInventory, adjustInventory, deleteInventory };

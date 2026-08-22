@@ -47,6 +47,9 @@ Victim workflow:
 3. Optionally assign a shelter with available capacity.
 4. List and update victim status and priority.
 
+Victim status is limited to `registered` and `relocated`. Existing legacy
+values are normalized by `004_victim_status_values.sql`.
+
 The list query uses correlated subqueries and `CASE` to return shelter
 occupancy and whether an assigned shelter is `full` or `available`.
 
@@ -62,8 +65,9 @@ modules.
 ## Inventory Module
 
 Inventory records connect one warehouse to one item and track a non-negative
-quantity. Admins can apply positive or negative adjustments transactionally.
-The database upsert rejects an adjustment that would make stock negative.
+quantity. Admins choose either Add stock or Remove stock and enter a positive
+quantity. Both operations are transactional, and removal is rejected when it
+would make stock negative.
 
 Items use controlled category and unit values. Categories include food, water,
 medical, hygiene, clothing, shelter, rescue, logistics, and other. Units

@@ -12,7 +12,7 @@ const {
 } = require('../sqls/victimSqls');
 
 const PRIORITIES = ['low', 'normal', 'high', 'critical'];
-const STATUSES = ['registered', 'sheltered', 'relocated', 'safe'];
+const STATUSES = ['registered', 'relocated'];
 
 function readVictimInput(body) {
   const numberOrNull = (value) => value === '' || value === null || value === undefined ? null : Number(value);
