@@ -3,6 +3,7 @@ import DashboardShell from '../components/DashboardShell';
 import DisasterList from '../components/DisasterList';
 import {
   createDisaster,
+  fetchDisasters,
   fetchPendingTeams,
   fetchAllTeams,
   reviewTeam,
@@ -18,6 +19,10 @@ import {
   createItem,
   updateItem,
   deleteItem,
+  fetchVictims,
+  createVictim,
+  updateVictim,
+  deleteVictim,
 } from '../utils/api';
 
 const TEAM_STATUSES = ['all', 'pending_approval', 'approved', 'rejected', 'disbanded'];
@@ -28,6 +33,9 @@ const EMPTY_WAREHOUSE = {
   name: '', division: '', district: '', upazila: '', union: '',
 };
 const EMPTY_ITEM = { name: '', category: '', unit: '' };
+const EMPTY_VICTIM = {
+  full_name: '', date_of_birth: '', gender: '', priority_level: 'normal', status: 'registered', disaster_id: '', shelter_id: '',
+};
 
 function statusLabel(status) {
   return String(status || '').replace('_', ' ');
@@ -490,6 +498,115 @@ const ItemTab = () => {
   );
 };
 
+const VictimTab = () => {
+  const [form, setForm] = useState(EMPTY_VICTIM);
+  const [victims, setVictims] = useState([]);
+  const [disasters, setDisasters] = useState([]);
+  const [shelters, setShelters] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
+
+  async function refresh() {
+    const [{ victims: victimRows }, { disasters: disasterRows }, { shelters: shelterRows }] = await Promise.all([
+      fetchVictims(), fetchDisasters(), fetchShelters(),
+    ]);
+    setVictims(victimRows);
+    setDisasters(disasterRows);
+    setShelters(shelterRows);
+  }
+
+  useEffect(() => {
+    refresh().catch((err) => {
+      setIsError(true);
+      setMessage(err.message);
+    });
+  }, []);
+
+  function updateField(field) {
+    return (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
+  }
+
+  function startEdit(victim) {
+    setEditingId(victim.victim_id);
+    setForm({
+      full_name: victim.full_name || '',
+      date_of_birth: victim.date_of_birth ? String(victim.date_of_birth).slice(0, 10) : '',
+      gender: victim.gender || '',
+      priority_level: victim.priority_level || 'normal',
+      status: victim.status || 'registered',
+      disaster_id: victim.disaster_id,
+      shelter_id: victim.shelter_id || '',
+    });
+    setMessage('');
+  }
+
+  function resetForm() {
+    setEditingId(null);
+    setForm(EMPTY_VICTIM);
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    setMessage('');
+    try {
+      const payload = { ...form, shelter_id: form.shelter_id || null };
+      const result = editingId ? await updateVictim(editingId, payload) : await createVictim(payload);
+      setIsError(false);
+      setMessage(result.message || (editingId ? 'Victim updated successfully.' : 'Victim registered successfully.'));
+      resetForm();
+      await refresh();
+    } catch (err) {
+      setIsError(true);
+      setMessage(err.message);
+    }
+  }
+
+  async function removeVictim(id) {
+    if (!window.confirm('Delete this victim record?')) return;
+    setMessage('');
+    try {
+      const result = await deleteVictim(id);
+      setIsError(false);
+      setMessage(result.message || 'Victim deleted successfully.');
+      if (editingId === id) resetForm();
+      await refresh();
+    } catch (err) {
+      setIsError(true);
+      setMessage(err.message);
+    }
+  }
+
+  return (
+    <>
+      <div className="info-card module-card">
+        <p className="eyebrow">{editingId ? 'Update victim' : 'Register victim'}</p>
+        {message && <div className={isError ? 'error-banner' : 'success-banner'}>{message}</div>}
+        <form onSubmit={submit}>
+          <div className="form-grid">
+            <div className="field"><label>Full name</label><input required value={form.full_name} onChange={updateField('full_name')} /></div>
+            <div className="field"><label>Date of birth</label><input type="date" value={form.date_of_birth} onChange={updateField('date_of_birth')} /></div>
+          </div>
+          <div className="form-grid">
+            <div className="field"><label>Gender</label><input value={form.gender} onChange={updateField('gender')} placeholder="Female" /></div>
+            <div className="field"><label>Priority</label><select value={form.priority_level} onChange={updateField('priority_level')}><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+          </div>
+          <div className="form-grid">
+            <div className="field"><label>Status</label><select value={form.status} onChange={updateField('status')}><option value="registered">Registered</option><option value="sheltered">Sheltered</option><option value="relocated">Relocated</option><option value="safe">Safe</option></select></div>
+            <div className="field"><label>Disaster</label><select required value={form.disaster_id} onChange={updateField('disaster_id')}><option value="">Select disaster</option>{disasters.map((disaster) => <option key={disaster.disaster_id} value={disaster.disaster_id}>{disaster.title}</option>)}</select></div>
+          </div>
+          <div className="field"><label>Shelter (optional)</label><select value={form.shelter_id} onChange={updateField('shelter_id')}><option value="">Unassigned</option>{shelters.map((shelter) => <option key={shelter.shelter_id} value={shelter.shelter_id}>{shelter.name} ({shelter.capacity} capacity)</option>)}</select></div>
+          <div className="button-row"><button type="submit" className="btn-primary">{editingId ? 'Update victim' : 'Register victim'}</button>{editingId && <button type="button" className="btn-ghost" onClick={resetForm}>Cancel</button>}</div>
+        </form>
+      </div>
+      <section className="module-section">
+        <div className="section-heading"><div><div className="eyebrow">Victim registry</div><h2>Affected people</h2></div><span className="count-badge">{victims.length} total</span></div>
+        {!victims.length ? <div className="empty-state">No victim records have been registered yet.</div> : <div className="table-wrap"><table className="data-table"><thead><tr><th>Victim</th><th>Disaster</th><th>Shelter</th><th>Priority</th><th>Status</th><th>Actions</th></tr></thead><tbody>{victims.map((victim) => <tr key={victim.victim_id}><td><strong>{victim.full_name}</strong><small>#{victim.victim_id}</small></td><td>{victim.disaster_title}</td><td>{victim.shelter_name || 'Unassigned'}</td><td>{victim.priority_level}</td><td><span className={`status-badge status-${victim.status}`}>{victim.status}</span></td><td><div className="button-row"><button className="btn-ghost" onClick={() => startEdit(victim)}>Edit</button><button className="btn-danger" onClick={() => removeVictim(victim.victim_id)}>Delete</button></div></td></tr>)}</tbody></table></div>}
+      </section>
+    </>
+  );
+};
+
 const TeamTab = () => {
   const [pendingTeams, setPendingTeams] = useState([]);
   const [allTeams, setAllTeams] = useState([]);
@@ -645,6 +762,14 @@ export default function AdminDashboard() {
         <path d="m3 12 9 5 9-5" />
         <path d="m3 16 9 5 9-5" />
       </svg>
+    )},
+    { id: 'victim', label: 'Victims', icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="9" cy="7" r="4" />
+        <path d="M2 21v-2a7 7 0 0 1 14 0v2" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        <path d="M22 21v-2a7 7 0 0 0-5-6.7" />
+      </svg>
     )}
   ];
 
@@ -687,6 +812,7 @@ export default function AdminDashboard() {
         {activeTab === 'shelter' && <ShelterTab />}
         {activeTab === 'warehouse' && <WarehouseTab />}
         {activeTab === 'item' && <ItemTab />}
+        {activeTab === 'victim' && <VictimTab />}
       </div>
     </DashboardShell>
   );

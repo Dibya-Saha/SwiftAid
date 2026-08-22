@@ -8,6 +8,7 @@ const userRoutes = require('./routes/userRoutes');
 const shelterRoutes = require('./routes/shelterRoutes');
 const warehouseRoutes = require('./routes/warehouseRoutes');
 const itemRoutes = require('./routes/itemRoutes');
+const victimRoutes = require('./routes/victimRoutes');
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/shelters', shelterRoutes);
 app.use('/api/warehouses', warehouseRoutes);
 app.use('/api/items', itemRoutes);
+app.use('/api/victims', victimRoutes);
 
 // Fallback 404
 app.use((req, res) => {
