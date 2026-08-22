@@ -25,13 +25,18 @@ function TeamMembershipCard({ team, currentUserId, onDisband, index }) {
         <span className={`status-badge status-${status}`}>{statusLabel(team.status)}</span>
       </div>
       <h3>{team.team_name}</h3>
+      {(status === 'approved' || status === 'rejected') && team.review_remark && (
+        <p className="muted team-card__note">Admin remark: {team.review_remark}</p>
+      )}
 
       {isInactive ? (
-        <p className="muted team-card__note">
-          {isRejected
-            ? 'This team was rejected. All members were released.'
-            : 'This team has been disbanded. All members were released.'}
-        </p>
+        <>
+          <p className="muted team-card__note">
+            {isRejected
+              ? 'This team was rejected. All members were released.'
+              : 'This team has been disbanded. All members were released.'}
+          </p>
+        </>
       ) : (
         <>
           <div className="team-card__meta">

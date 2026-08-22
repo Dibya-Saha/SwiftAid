@@ -118,12 +118,16 @@ async function listAll(req, res) {
 
 async function reviewTeam(req, res) {
   const status = req.params.action === 'approve' ? 'approved' : 'rejected';
+  const reviewRemark = typeof req.body.remark === 'string' ? req.body.remark.trim() : '';
+  if (status === 'rejected' && !reviewRemark) {
+    return res.status(400).json({ message: 'A rejection reason is required' });
+  }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const result = await client.query(
       UPDATE_TEAM_STATUS,
-      [status, req.user.user_id, req.params.id]
+      [status, req.user.user_id, req.params.id, reviewRemark || null]
     );
     if (!result.rows[0]) {
       await client.query('ROLLBACK');

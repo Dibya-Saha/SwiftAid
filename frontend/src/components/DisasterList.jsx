@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchDisasters, updateDisasterStatus } from '../utils/api';
 
-const STATUSES = ['ACTIVE', 'ONGOING', 'RESOLVED', 'CLOSED'];
+const STATUSES = ['ACTIVE', 'CLOSED'];
 
 function locationLabel(locations = []) {
   return locations

@@ -53,8 +53,11 @@ export const fetchPendingTeams = () => request('/teams/pending');
 
 export const fetchAllTeams = () => request('/teams');
 
-export const reviewTeam = (id, action) =>
-  request(`/teams/${id}/${action}`, { method: 'POST' });
+export const reviewTeam = (id, action, remark = '') =>
+  request(`/teams/${id}/${action}`, {
+    method: 'POST',
+    body: JSON.stringify({ remark }),
+  });
 
 export const resignFromTeam = (teamId) =>
   request(`/teams/${teamId}/members/me`, { method: 'DELETE' });

@@ -309,7 +309,8 @@ button {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   width: 100%;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -321,9 +322,15 @@ button {
 }
 
 .field input:focus,
-.field select:focus {
+.field select:focus,
+.field textarea:focus {
   border-color: var(--accent);
   outline: none;
+}
+
+.field textarea {
+  min-height: 84px;
+  resize: vertical;
 }
 
 /* Keep browser-autofilled credentials aligned with the dark theme. */

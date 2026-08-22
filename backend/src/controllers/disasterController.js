@@ -67,7 +67,7 @@ async function listDisasters(req, res) {
 
 // PATCH /api/disasters/:id/status
 async function updateDisasterStatus(req, res) {
-    const statuses = ['ACTIVE', 'ONGOING', 'RESOLVED', 'CLOSED'];
+    const statuses = ['ACTIVE', 'CLOSED'];
     const status = String(req.body.status || '').toUpperCase();
     if (!statuses.includes(status)) {
         return res.status(400).json({ message: `status must be one of: ${statuses.join(', ')}` });

@@ -1,5 +1,5 @@
 const TEAMS_QUERY = `
-  SELECT t.team_id, t.team_name, t.team_type, t.status, t.leader_id,
+  SELECT t.team_id, t.team_name, t.team_type, t.status, t.leader_id, t.review_remark,
          leader.name AS leader_name,
          COALESCE(json_agg(json_build_object(
            'user_id', member.user_id,
@@ -17,7 +17,7 @@ const TEAMS_QUERY = `
 const TEAMS_GROUP_ORDER = 'GROUP BY t.team_id, leader.name ORDER BY t.team_id DESC';
 
 const TEAM_FILTERS = {
-  mine: "WHERE LOWER(t.status) <> 'rejected' AND (t.team_id IN (SELECT team_id FROM team_members WHERE user_id = $1) OR t.leader_id = $1)",
+  mine: "WHERE (t.team_id IN (SELECT team_id FROM team_members WHERE user_id = $1) OR t.leader_id = $1)",
   pending: "WHERE LOWER(t.status) = 'pending_approval'",
   all: '',
 };
@@ -37,8 +37,10 @@ const INSERT_LEADER_MEMBER = `INSERT INTO team_members (team_id, user_id, member
 const INSERT_MEMBER_ROWS = `INSERT INTO team_members (team_id, user_id, member_role)
   SELECT $1, unnest($2::int[]), 'member'`;
 
-const UPDATE_TEAM_STATUS = `UPDATE teams SET status = $1, approved_by_admin_id = $2 WHERE team_id = $3
-  RETURNING team_id, team_name, team_type, status, leader_id, approved_by_admin_id`;
+const UPDATE_TEAM_STATUS = `UPDATE teams
+  SET status = $1, approved_by_admin_id = $2, review_remark = $4
+  WHERE team_id = $3
+  RETURNING team_id, team_name, team_type, status, leader_id, approved_by_admin_id, review_remark`;
 
 const DELETE_MEMBERS_BY_TEAM = 'DELETE FROM team_members WHERE team_id = $1';
 
