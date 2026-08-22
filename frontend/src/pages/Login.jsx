@@ -35,9 +35,9 @@ export default function Login() {
         <div className="auth-brand__content">
           <div className="swiftaid-logo">
             <span className="swiftaid-logo__bolt swiftaid-logo__bolt--pulse">⚡</span>
-            <span className="swiftaid-logo__name swiftaid-logo__name--glow">SwiftAid</span>
+            <span className="swiftaid-logo__name swiftaid-logo__name--glow text-gradient">SwiftAid</span>
           </div>
-          <h1 className="brand-title brand-title--fade">
+          <h1 className="brand-title brand-title--fade text-gradient">
             Disaster relief,<br />coordinated in real time.
           </h1>
         </div>

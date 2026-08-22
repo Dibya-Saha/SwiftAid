@@ -70,12 +70,10 @@ button {
 @keyframes nameGlow {
   0%,
   100% {
-    color: var(--text);
-    text-shadow: none;
+    filter: drop-shadow(0 0 0 rgba(9, 236, 221, 0));
   }
   50% {
-    color: #fff;
-    text-shadow: 0 0 20px rgba(242, 183, 5, 0.6), 0 0 40px rgba(242, 183, 5, 0.2);
+    filter: drop-shadow(0 0 12px rgba(9, 236, 221, 0.55)) drop-shadow(0 0 24px rgba(7, 126, 58, 0.4));
   }
 }
 
@@ -193,6 +191,19 @@ button {
 
 .brand-title--fade {
   animation: fadeUp 0.9s ease both;
+}
+
+.text-gradient {
+  color: #077e3a;
+  background-image: linear-gradient(0deg, #077e3a 22%, #09ecdd 70%, #09ecdd 86%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.swiftaid-logo__name.text-gradient,
+.brand-title.text-gradient {
+  color: #077e3a;
 }
 
 /* Buttons */
