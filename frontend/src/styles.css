@@ -292,6 +292,13 @@ button {
   margin-top: 0;
 }
 
+.button-row .btn-danger,
+.data-table .btn-danger {
+  width: auto;
+  margin-top: 0;
+  padding: 8px 14px;
+}
+
 /* Form Fields */
 .field {
   margin-bottom: 16px;
@@ -536,9 +543,10 @@ button {
 
 /* Tables */
 .table-wrap {
-  overflow-x: hidden;
+  overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: 6px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .data-table {
@@ -578,6 +586,47 @@ button {
   color: var(--muted);
   font-size: 11px;
   margin-top: 4px;
+}
+
+.data-table:has(td .button-row) th:last-child,
+.data-table:has(td .button-row) td:has(.button-row) {
+  width: 152px;
+  min-width: 152px;
+  max-width: 152px;
+  text-align: right;
+  overflow: visible;
+  text-overflow: clip;
+  padding-right: 14px;
+}
+
+.data-table:has(td > .btn-danger):not(:has(td .button-row)) th:last-child,
+.data-table:has(td > .btn-danger):not(:has(td .button-row)) td:has(> .btn-danger) {
+  width: 96px;
+  min-width: 96px;
+  max-width: 96px;
+  text-align: right;
+  overflow: visible;
+  text-overflow: clip;
+  padding-right: 14px;
+}
+
+.data-table td:has(.button-row) .button-row {
+  display: inline-flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.data-table .table-actions .btn-ghost,
+.data-table .table-actions .btn-danger,
+.data-table td:has(.button-row) .btn-ghost,
+.data-table td:has(.button-row) .btn-danger,
+.data-table td:has(> .btn-danger) .btn-danger {
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.2;
+  flex-shrink: 0;
 }
 
 /* Checkbox lists */
