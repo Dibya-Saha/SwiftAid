@@ -1,0 +1,142 @@
+/* Login animated gradient background (login page only) */
+
+@property --auth-bg-angle {
+  syntax: '<angle>';
+  initial-value: 140deg;
+  inherits: false;
+}
+
+@property --auth-bg-c1 {
+  syntax: '<color>';
+  initial-value: oklch(0.2 0.04 195);
+  inherits: false;
+}
+
+@property --auth-bg-c2 {
+  syntax: '<color>';
+  initial-value: oklch(0.32 0.08 185);
+  inherits: false;
+}
+
+@property --auth-bg-c3 {
+  syntax: '<color>';
+  initial-value: oklch(0.42 0.12 175);
+  inherits: false;
+}
+
+@property --auth-bg-c4 {
+  syntax: '<color>';
+  initial-value: oklch(0.28 0.06 205);
+  inherits: false;
+}
+
+@keyframes authBgDrift {
+  0% {
+    --auth-bg-angle: 135deg;
+    --auth-bg-c1: oklch(0.17 0.035 198);
+    --auth-bg-c2: oklch(0.28 0.07 188);
+    --auth-bg-c3: oklch(0.38 0.11 178);
+    --auth-bg-c4: oklch(0.22 0.05 208);
+  }
+
+  33% {
+    --auth-bg-angle: 215deg;
+    --auth-bg-c1: oklch(0.2 0.05 192);
+    --auth-bg-c2: oklch(0.34 0.1 182);
+    --auth-bg-c3: oklch(0.46 0.14 168);
+    --auth-bg-c4: oklch(0.24 0.06 200);
+  }
+
+  66% {
+    --auth-bg-angle: 285deg;
+    --auth-bg-c1: oklch(0.18 0.045 190);
+    --auth-bg-c2: oklch(0.4 0.13 175);
+    --auth-bg-c3: oklch(0.5 0.15 165);
+    --auth-bg-c4: oklch(0.26 0.08 195);
+  }
+
+  100% {
+    --auth-bg-angle: 340deg;
+    --auth-bg-c1: oklch(0.16 0.03 200);
+    --auth-bg-c2: oklch(0.3 0.09 185);
+    --auth-bg-c3: oklch(0.44 0.13 172);
+    --auth-bg-c4: oklch(0.21 0.05 210);
+  }
+}
+
+.auth-shell--animated {
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-shell--animated .auth-bg__sky,
+.auth-shell--animated .auth-bg__grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.auth-shell--animated .auth-bg__sky {
+  z-index: 0;
+  contain: strict;
+  transform: translate3d(0, 0, 0);
+  background: linear-gradient(
+    var(--auth-bg-angle),
+    var(--auth-bg-c1) 0%,
+    var(--auth-bg-c2) 34%,
+    var(--auth-bg-c3) 68%,
+    var(--auth-bg-c4) 100%
+  );
+  animation: authBgDrift 18s ease-in-out infinite alternate;
+}
+
+.auth-shell--animated .auth-bg__grain {
+  z-index: 1;
+  contain: strict;
+  transform: translate3d(0, 0, 0);
+  opacity: 0.18;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+.auth-shell--animated .auth-brand,
+.auth-shell--animated .auth-form-wrap {
+  position: relative;
+  z-index: 2;
+  background: transparent;
+}
+
+.auth-shell--animated .auth-brand {
+  border-right: none;
+}
+
+/* Avoid backdrop-filter here — it re-blurs the animated bg on every input repaint. */
+.auth-shell--animated .auth-card {
+  contain: layout style paint;
+  transform: translate3d(0, 0, 0);
+  background: rgba(14, 27, 30, 0.88);
+  border-color: rgba(9, 236, 221, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 24px 56px -28px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(7, 126, 58, 0.08);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.auth-shell--animated .auth-card .field input,
+.auth-shell--animated .auth-card .field select {
+  background: var(--panel-alt);
+}
+
+@supports (background: color-mix(in oklab, white 10%, transparent)) {
+  .auth-shell--animated .auth-card {
+    background: color-mix(in oklab, var(--panel) 88%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-shell--animated .auth-bg__sky {
+    animation: none;
+  }
+}

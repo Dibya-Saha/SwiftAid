@@ -70,10 +70,10 @@ button {
 @keyframes nameGlow {
   0%,
   100% {
-    filter: drop-shadow(0 0 0 rgba(9, 236, 221, 0));
+    filter: drop-shadow(0 0 0 rgba(165, 243, 252, 0));
   }
   50% {
-    filter: drop-shadow(0 0 12px rgba(9, 236, 221, 0.55)) drop-shadow(0 0 24px rgba(7, 126, 58, 0.4));
+    filter: drop-shadow(0 0 14px rgba(165, 243, 252, 0.65)) drop-shadow(0 0 28px rgba(45, 212, 191, 0.45));
   }
 }
 
@@ -194,8 +194,8 @@ button {
 }
 
 .text-gradient {
-  color: #077e3a;
-  background-image: linear-gradient(0deg, #077e3a 22%, #09ecdd 70%, #09ecdd 86%);
+  color: #5eead4;
+  background-image: linear-gradient(0deg, #2dd4bf 18%, #7dd3fc 52%, #f0fdfa 88%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -203,7 +203,7 @@ button {
 
 .swiftaid-logo__name.text-gradient,
 .brand-title.text-gradient {
-  color: #077e3a;
+  color: #5eead4;
 }
 
 /* Buttons */

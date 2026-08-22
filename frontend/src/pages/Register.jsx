@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registerUser } from '../utils/api';
+import '../styles/auth-background.css';
 
 const ROLES = ['admin', 'donor', 'team', 'volunteer'];
 
@@ -38,7 +39,10 @@ export default function Register() {
   }
 
   return (
-    <div className="auth-shell auth-shell--solo">
+    <div className="auth-shell auth-shell--solo auth-shell--animated">
+      <div className="auth-bg__sky" aria-hidden="true" />
+      <div className="auth-bg__grain" aria-hidden="true" />
+
       <div className="auth-form-wrap">
         <div className="auth-card">
           <h2>Create account</h2>

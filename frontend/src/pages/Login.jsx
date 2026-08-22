@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { loginUser } from '../utils/api';
 import { saveSession, ROLE_HOME } from '../utils/auth';
+import '../styles/auth-background.css';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -29,7 +30,10 @@ export default function Login() {
   }
 
   return (
-    <div className="auth-shell">
+    <div className="auth-shell auth-shell--animated">
+      <div className="auth-bg__sky" aria-hidden="true" />
+      <div className="auth-bg__grain" aria-hidden="true" />
+
       {/* ── Left: Branding ── */}
       <aside className="auth-brand">
         <div className="auth-brand__content">
