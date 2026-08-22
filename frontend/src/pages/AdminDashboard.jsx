@@ -10,12 +10,24 @@ import {
   createShelter,
   updateShelter,
   deleteShelter,
+  fetchWarehouses,
+  createWarehouse,
+  updateWarehouse,
+  deleteWarehouse,
+  fetchItems,
+  createItem,
+  updateItem,
+  deleteItem,
 } from '../utils/api';
 
 const TEAM_STATUSES = ['all', 'pending_approval', 'approved', 'rejected', 'disbanded'];
 const EMPTY_SHELTER = {
   name: '', address: '', capacity: '', division: '', district: '', upazila: '', union: '',
 };
+const EMPTY_WAREHOUSE = {
+  name: '', division: '', district: '', upazila: '', union: '',
+};
+const EMPTY_ITEM = { name: '', category: '', unit: '' };
 
 function statusLabel(status) {
   return String(status || '').replace('_', ' ');
@@ -246,6 +258,238 @@ const ShelterTab = () => {
   );
 };
 
+const WarehouseTab = () => {
+  const [form, setForm] = useState(EMPTY_WAREHOUSE);
+  const [warehouses, setWarehouses] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
+
+  async function refreshWarehouses() {
+    const { warehouses: rows } = await fetchWarehouses();
+    setWarehouses(rows);
+  }
+
+  useEffect(() => {
+    refreshWarehouses().catch((err) => {
+      setIsError(true);
+      setMessage(err.message);
+    });
+  }, []);
+
+  function updateField(field) {
+    return (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
+  }
+
+  function startEdit(warehouse) {
+    setEditingId(warehouse.warehouse_id);
+    setForm({
+      name: warehouse.name || '',
+      division: warehouse.division || '',
+      district: warehouse.district || '',
+      upazila: warehouse.upazila || '',
+      union: warehouse.union_name || '',
+    });
+    setMessage('');
+  }
+
+  function resetForm() {
+    setEditingId(null);
+    setForm(EMPTY_WAREHOUSE);
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    setMessage('');
+    try {
+      const result = editingId
+        ? await updateWarehouse(editingId, form)
+        : await createWarehouse(form);
+      setIsError(false);
+      setMessage(result.message || (editingId ? 'Warehouse updated successfully.' : 'Warehouse created successfully.'));
+      resetForm();
+      await refreshWarehouses();
+    } catch (err) {
+      setIsError(true);
+      setMessage(err.message);
+    }
+  }
+
+  async function removeWarehouse(id) {
+    if (!window.confirm('Delete this warehouse?')) return;
+    setMessage('');
+    try {
+      const result = await deleteWarehouse(id);
+      setIsError(false);
+      setMessage(result.message || 'Warehouse deleted successfully.');
+      if (editingId === id) resetForm();
+      await refreshWarehouses();
+    } catch (err) {
+      setIsError(true);
+      setMessage(err.message);
+    }
+  }
+
+  return (
+    <>
+      <div className="info-card module-card">
+        <p className="eyebrow">{editingId ? 'Update warehouse' : 'Register warehouse'}</p>
+        {message && <div className={isError ? 'error-banner' : 'success-banner'}>{message}</div>}
+        <form onSubmit={submit}>
+          <div className="field">
+            <label>Warehouse name</label>
+            <input required value={form.name} onChange={updateField('name')} placeholder="Central Relief Warehouse" />
+          </div>
+          <div className="form-grid">
+            <div className="field"><label>Division</label><input required value={form.division} onChange={updateField('division')} placeholder="Sylhet" /></div>
+            <div className="field"><label>District</label><input required value={form.district} onChange={updateField('district')} placeholder="Sunamganj" /></div>
+            <div className="field"><label>Upazila</label><input value={form.upazila} onChange={updateField('upazila')} /></div>
+            <div className="field"><label>Union</label><input value={form.union} onChange={updateField('union')} /></div>
+          </div>
+          <div className="button-row">
+            <button type="submit" className="btn-primary">{editingId ? 'Update warehouse' : 'Create warehouse'}</button>
+            {editingId && <button type="button" className="btn-ghost" onClick={resetForm}>Cancel</button>}
+          </div>
+        </form>
+      </div>
+
+      <section className="module-section">
+        <div className="section-heading">
+          <div><div className="eyebrow">Warehouse registry</div><h2>Relief warehouses</h2></div>
+          <span className="count-badge">{warehouses.length} total</span>
+        </div>
+        {!warehouses.length ? <div className="empty-state">No warehouses have been registered yet.</div> : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead><tr><th>Warehouse</th><th>Location</th><th>Actions</th></tr></thead>
+              <tbody>
+                {warehouses.map((warehouse) => (
+                  <tr key={warehouse.warehouse_id}>
+                    <td><strong>{warehouse.name}</strong><small>#{warehouse.warehouse_id}</small></td>
+                    <td>{[warehouse.district, warehouse.upazila, warehouse.union_name].filter(Boolean).join(' / ')}</td>
+                    <td><div className="button-row"><button className="btn-ghost" onClick={() => startEdit(warehouse)}>Edit</button><button className="btn-danger" onClick={() => removeWarehouse(warehouse.warehouse_id)}>Delete</button></div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </>
+  );
+};
+
+const ItemTab = () => {
+  const [form, setForm] = useState(EMPTY_ITEM);
+  const [items, setItems] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
+
+  async function refreshItems() {
+    const { items: rows } = await fetchItems();
+    setItems(rows);
+  }
+
+  useEffect(() => {
+    refreshItems().catch((err) => {
+      setIsError(true);
+      setMessage(err.message);
+    });
+  }, []);
+
+  function updateField(field) {
+    return (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
+  }
+
+  function startEdit(item) {
+    setEditingId(item.item_id);
+    setForm({ name: item.name || '', category: item.category || '', unit: item.unit || '' });
+    setMessage('');
+  }
+
+  function resetForm() {
+    setEditingId(null);
+    setForm(EMPTY_ITEM);
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    setMessage('');
+    try {
+      const result = editingId
+        ? await updateItem(editingId, form)
+        : await createItem(form);
+      setIsError(false);
+      setMessage(result.message || (editingId ? 'Item updated successfully.' : 'Item created successfully.'));
+      resetForm();
+      await refreshItems();
+    } catch (err) {
+      setIsError(true);
+      setMessage(err.message);
+    }
+  }
+
+  async function removeItem(id) {
+    if (!window.confirm('Delete this item?')) return;
+    setMessage('');
+    try {
+      const result = await deleteItem(id);
+      setIsError(false);
+      setMessage(result.message || 'Item deleted successfully.');
+      if (editingId === id) resetForm();
+      await refreshItems();
+    } catch (err) {
+      setIsError(true);
+      setMessage(err.message);
+    }
+  }
+
+  return (
+    <>
+      <div className="info-card module-card">
+        <p className="eyebrow">{editingId ? 'Update item' : 'Add item'}</p>
+        {message && <div className={isError ? 'error-banner' : 'success-banner'}>{message}</div>}
+        <form onSubmit={submit}>
+          <div className="form-grid">
+            <div className="field"><label>Item name</label><input required value={form.name} onChange={updateField('name')} placeholder="Rice" /></div>
+            <div className="field"><label>Unit</label><input required value={form.unit} onChange={updateField('unit')} placeholder="kg" /></div>
+          </div>
+          <div className="field"><label>Category</label><input value={form.category} onChange={updateField('category')} placeholder="Food" /></div>
+          <div className="button-row">
+            <button type="submit" className="btn-primary">{editingId ? 'Update item' : 'Create item'}</button>
+            {editingId && <button type="button" className="btn-ghost" onClick={resetForm}>Cancel</button>}
+          </div>
+        </form>
+      </div>
+
+      <section className="module-section">
+        <div className="section-heading">
+          <div><div className="eyebrow">Item catalog</div><h2>Relief items</h2></div>
+          <span className="count-badge">{items.length} total</span>
+        </div>
+        {!items.length ? <div className="empty-state">No items have been added yet.</div> : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead><tr><th>Item</th><th>Category</th><th>Unit</th><th>Actions</th></tr></thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.item_id}>
+                    <td><strong>{item.name}</strong><small>#{item.item_id}</small></td>
+                    <td>{item.category || '—'}</td>
+                    <td>{item.unit}</td>
+                    <td><div className="button-row"><button className="btn-ghost" onClick={() => startEdit(item)}>Edit</button><button className="btn-danger" onClick={() => removeItem(item.item_id)}>Delete</button></div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </>
+  );
+};
+
 const TeamTab = () => {
   const [pendingTeams, setPendingTeams] = useState([]);
   const [allTeams, setAllTeams] = useState([]);
@@ -386,6 +630,21 @@ export default function AdminDashboard() {
         <path d="M9 21v-6h6v6" />
         <path d="M9 10h.01M15 10h.01" />
       </svg>
+    )},
+    { id: 'warehouse', label: 'Warehouses', icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 21h18" />
+        <path d="M4 21V8l8-4 8 4v13" />
+        <path d="M8 21v-7h8v7" />
+        <path d="M8 10h.01M12 10h.01M16 10h.01" />
+      </svg>
+    )},
+    { id: 'item', label: 'Items', icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m21 8-9-5-9 5 9 5 9-5Z" />
+        <path d="m3 12 9 5 9-5" />
+        <path d="m3 16 9 5 9-5" />
+      </svg>
     )}
   ];
 
@@ -426,6 +685,8 @@ export default function AdminDashboard() {
         {activeTab === 'disaster' && <DisasterTab refreshKey={refreshKey} />}
         {activeTab === 'team' && <TeamTab />}
         {activeTab === 'shelter' && <ShelterTab />}
+        {activeTab === 'warehouse' && <WarehouseTab />}
+        {activeTab === 'item' && <ItemTab />}
       </div>
     </DashboardShell>
   );

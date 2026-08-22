@@ -6,6 +6,8 @@ const authRoutes = require('./routes/authRoutes');
 const teamRoutes = require('./routes/teamRoutes');
 const userRoutes = require('./routes/userRoutes');
 const shelterRoutes = require('./routes/shelterRoutes');
+const warehouseRoutes = require('./routes/warehouseRoutes');
+const itemRoutes = require('./routes/itemRoutes');
 
 const app = express();
 
@@ -29,6 +31,8 @@ app.use('/api/disasters', disasterRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/shelters', shelterRoutes);
+app.use('/api/warehouses', warehouseRoutes);
+app.use('/api/items', itemRoutes);
 
 // Fallback 404
 app.use((req, res) => {

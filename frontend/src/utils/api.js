@@ -53,6 +53,28 @@ export const updateShelter = (id, payload) =>
 export const deleteShelter = (id) =>
   request(`/shelters/${id}`, { method: 'DELETE' });
 
+export const fetchWarehouses = () => request('/warehouses');
+
+export const createWarehouse = (payload) =>
+  request('/warehouses', { method: 'POST', body: JSON.stringify(payload) });
+
+export const updateWarehouse = (id, payload) =>
+  request(`/warehouses/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+
+export const deleteWarehouse = (id) =>
+  request(`/warehouses/${id}`, { method: 'DELETE' });
+
+export const fetchItems = () => request('/items');
+
+export const createItem = (payload) =>
+  request('/items', { method: 'POST', body: JSON.stringify(payload) });
+
+export const updateItem = (id, payload) =>
+  request(`/items/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+
+export const deleteItem = (id) =>
+  request(`/items/${id}`, { method: 'DELETE' });
+
 export const fetchVolunteers = () => request('/users/volunteers');
 
 export const createTeam = (payload) =>
