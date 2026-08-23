@@ -1,12 +1,12 @@
 const TEAMS_QUERY = `
   SELECT t.team_id, t.team_name, t.team_type, t.status, t.leader_id, t.review_remark,
-         leader.name AS leader_name,
+         leader.full_name AS leader_name,
          COALESCE(json_agg(json_build_object(
            'user_id', member.user_id,
-           'name', member.name,
+           'name', member.full_name,
            'email', member.email,
            'role', tm.member_role
-         ) ORDER BY tm.member_role DESC, member.name)
+         ) ORDER BY tm.member_role DESC, member.full_name)
          FILTER (WHERE member.user_id IS NOT NULL), '[]') AS members
   FROM teams t
   LEFT JOIN users leader ON leader.user_id = t.leader_id
@@ -14,7 +14,7 @@ const TEAMS_QUERY = `
   LEFT JOIN users member ON member.user_id = tm.user_id
 `;
 
-const TEAMS_GROUP_ORDER = 'GROUP BY t.team_id, leader.name ORDER BY t.team_id DESC';
+const TEAMS_GROUP_ORDER = 'GROUP BY t.team_id, leader.full_name ORDER BY t.team_id DESC';
 
 const TEAM_FILTERS = {
   mine: "WHERE (t.team_id IN (SELECT team_id FROM team_members WHERE user_id = $1) OR t.leader_id = $1)",
