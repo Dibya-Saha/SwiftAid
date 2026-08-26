@@ -718,12 +718,74 @@ button {
   color: var(--accent);
 }
 
+.select-option--disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .select-native-fallback {
   position: absolute;
   opacity: 0;
   pointer-events: none;
   width: 0;
   height: 0;
+}
+
+/* Selected card / chip replacing dropdown after selection */
+.selected-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid rgba(242, 183, 5, 0.32);
+  border-radius: 4px;
+  background: rgba(242, 183, 5, 0.10);
+  color: var(--text);
+  animation: cardReveal 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.selected-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.selected-card__label {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selected-card__sublabel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selected-card__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.selected-card--item {
+  padding: 10px 12px;
+  background: rgba(20, 40, 44, 0.85);
+  border-color: var(--border);
+}
+
+.selected-card--item .selected-card__label {
+  font-size: 13px;
 }
 
 .select-control--pill .select-trigger {

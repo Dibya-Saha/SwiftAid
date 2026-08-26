@@ -26,14 +26,18 @@ export default function Select({
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const normalizedOptions = options.map((option) => (
-    typeof option === 'string' ? { value: option, label: option } : option
+    typeof option === 'string' ? { value: option, label: option } : { ...option }
   ));
 
   const selectedOption = normalizedOptions.find((option) => String(option.value) === String(value));
   const displayLabel = selectedOption?.label ?? placeholder;
 
   function emitChange(nextValue) {
-    onChange?.({ target: { value: nextValue } });
+    onChange?.({
+      target: {
+        value: String(nextValue),
+      },
+    });
   }
 
   function closeMenu() {
@@ -42,7 +46,11 @@ export default function Select({
   }
 
   function selectOption(option) {
-    emitChange(option.value);
+    if (option.disabled) return;
+
+    console.log('[Select] selected option:', option);
+
+    emitChange(String(option.value));
     closeMenu();
   }
 
@@ -94,17 +102,29 @@ export default function Select({
 
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      setActiveIndex((index) => (index + 1) % normalizedOptions.length);
+      let next = (activeIndex + 1) % normalizedOptions.length;
+      // skip disabled
+      for (let i = 0; i < normalizedOptions.length; i++) {
+        if (!normalizedOptions[next]?.disabled) break;
+        next = (next + 1) % normalizedOptions.length;
+      }
+      setActiveIndex(next);
     }
 
     if (event.key === 'ArrowUp') {
       event.preventDefault();
-      setActiveIndex((index) => (index - 1 + normalizedOptions.length) % normalizedOptions.length);
+      let prev = (activeIndex - 1 + normalizedOptions.length) % normalizedOptions.length;
+      for (let i = 0; i < normalizedOptions.length; i++) {
+        if (!normalizedOptions[prev]?.disabled) break;
+        prev = (prev - 1 + normalizedOptions.length) % normalizedOptions.length;
+      }
+      setActiveIndex(prev);
     }
 
     if (event.key === 'Enter' && activeIndex >= 0) {
       event.preventDefault();
-      selectOption(normalizedOptions[activeIndex]);
+      const opt = normalizedOptions[activeIndex];
+      if (opt && !opt.disabled) selectOption(opt);
     }
 
     if (event.key === 'Escape') {
@@ -146,16 +166,18 @@ export default function Select({
         {normalizedOptions.map((option, index) => {
           const isSelected = String(option.value) === String(value);
           const isActive = index === activeIndex;
+          const isDisabled = Boolean(option.disabled);
 
           return (
             <li
               key={`${option.value}-${option.label}`}
               role="option"
               aria-selected={isSelected}
-              className={`select-option ${isSelected ? 'select-option--selected' : ''} ${isActive ? 'select-option--active' : ''}`}
-              onMouseEnter={() => setActiveIndex(index)}
+              aria-disabled={isDisabled ? 'true' : undefined}
+              className={`select-option ${isSelected ? 'select-option--selected' : ''} ${isActive ? 'select-option--active' : ''} ${isDisabled ? 'select-option--disabled' : ''}`}
+              onMouseEnter={() => !isDisabled && setActiveIndex(index)}
               onMouseDown={(event) => event.preventDefault()}
-              onClick={() => selectOption(option)}
+              onClick={() => !isDisabled && selectOption(option)}
             >
               {option.label}
             </li>
