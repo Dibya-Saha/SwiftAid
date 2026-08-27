@@ -14,51 +14,49 @@ function integer(value) {
   return Number.isInteger(parsed) ? parsed : null;
 }
 
+function readDonationItems(body) {
+  if (Array.isArray(body.items)) return body.items;
+
+  const itemId = integer(body.item_id);
+  const quantity = integer(body.quantity);
+  if (itemId === null || quantity === null) return null;
+
+  return [{ item_id: itemId, quantity }];
+}
+
+function validateDonationItems(rawItems) {
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
+    return 'At least one item is required';
+  }
+  if (rawItems.length > 20) return 'Maximum 20 items per donation';
+
+  const mergedItems = new Map();
+  for (const rawItem of rawItems) {
+    const itemId = integer(rawItem.item_id);
+    const quantity = integer(rawItem.quantity);
+    if (itemId === null || quantity === null || quantity <= 0) {
+      return 'Each item requires a valid item_id and a positive integer quantity';
+    }
+    mergedItems.set(itemId, (mergedItems.get(itemId) || 0) + quantity);
+  }
+
+  if (mergedItems.size > 20) return 'Maximum 20 unique items per donation';
+  return Array.from(mergedItems, ([item_id, quantity]) => ({ item_id, quantity }));
+}
+
 async function createDonation(req, res) {
   const warehouseId = integer(req.body.warehouse_id);
   if (warehouseId === null) {
     return res.status(400).json({ message: 'warehouse_id is required and must be an integer' });
   }
 
-  let rawItems;
-  if (Array.isArray(req.body.items)) {
-    rawItems = req.body.items;
-  } else {
-    const itemId = integer(req.body.item_id);
-    const quantity = integer(req.body.quantity);
-    if (itemId === null || quantity === null) {
-      return res.status(400).json({ message: 'warehouse_id, item_id, and a positive integer quantity are required' });
-    }
-    rawItems = [{ item_id: itemId, quantity }];
+  const rawItems = readDonationItems(req.body);
+  if (rawItems === null) {
+    return res.status(400).json({ message: 'warehouse_id, item_id, and a positive integer quantity are required' });
   }
 
-  if (!Array.isArray(rawItems) || rawItems.length === 0) {
-    return res.status(400).json({ message: 'At least one item is required' });
-  }
-  if (rawItems.length > 20) {
-    return res.status(400).json({ message: 'Maximum 20 items per donation' });
-  }
-
-  const parsedItems = [];
-  for (const r of rawItems) {
-    const itemId = integer(r.item_id);
-    const quantity = integer(r.quantity);
-    if (itemId === null || quantity === null || quantity <= 0) {
-      return res.status(400).json({ message: 'Each item requires a valid item_id and a positive integer quantity' });
-    }
-    parsedItems.push({ item_id: itemId, quantity });
-  }
-
-  // Merge duplicate item_ids by summing quantities
-  const merged = new Map();
-  for (const { item_id, quantity } of parsedItems) {
-    merged.set(item_id, (merged.get(item_id) || 0) + quantity);
-  }
-  const items = Array.from(merged.entries()).map(([item_id, quantity]) => ({ item_id, quantity }));
-
-  if (items.length > 20) {
-    return res.status(400).json({ message: 'Maximum 20 unique items per donation' });
-  }
+  const items = validateDonationItems(rawItems);
+  if (typeof items === 'string') return res.status(400).json({ message: items });
 
   const donorId = req.user.user_id;
   const isSingleLegacy = !Array.isArray(req.body.items);
