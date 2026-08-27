@@ -38,6 +38,56 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Global thin scrollbar — whole website (exact :root bg colors) */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--bg);
+}
+
+html::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+html::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background: var(--panel-alt);
+}
+
+html::-webkit-scrollbar-corner {
+  background: var(--bg);
+}
+
+body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+body::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+body::-webkit-scrollbar-thumb:hover {
+  background: var(--panel-alt);
+}
+
 a {
   color: var(--accent);
 }
@@ -670,8 +720,10 @@ button {
 .select-menu {
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
-  right: 0;
+  left: 1.5px;
+  right: 1.5px;
+  width: auto;
+  box-sizing: border-box;
   z-index: 30;
   margin: 0;
   padding: 6px;
@@ -698,6 +750,36 @@ button {
   visibility: visible;
   transform: translateY(0) scale(1);
   pointer-events: auto;
+}
+
+/* thin scrollbar to match :root bg — select dropdown */
+.select-menu {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.select-menu::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.select-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.select-menu::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+.select-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--panel-alt);
+}
+
+.select-menu::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .select-option {
@@ -814,9 +896,37 @@ button {
 /* Tables */
 .table-wrap {
   overflow-x: auto;
+  overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 6px;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  max-height: 60vh;
+}
+
+.table-wrap::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.table-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-wrap::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+.table-wrap::-webkit-scrollbar-thumb:hover {
+  background: var(--panel-alt);
+}
+
+.table-wrap::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .data-table {
