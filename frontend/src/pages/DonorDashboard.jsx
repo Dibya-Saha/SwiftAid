@@ -98,7 +98,8 @@ function DonateTab({ onDonated }) {
         items: rows.map((r) => ({ item_id: Number(r.itemId), quantity: Number(r.quantity) })),
       });
       setSuccess(`Donation recorded: ${rows.length} item(s) added to inventory`);
-      // Keep selected warehouse, only clear item rows
+      // Keep selected warehouse, only clear item rows and collapse any open dropdown state
+      setEditingWarehouse(false);
       setRows([{ key: nextKey, itemId: '', quantity: '' }]);
       setNextKey((k) => k + 1);
       if (onDonated) onDonated();

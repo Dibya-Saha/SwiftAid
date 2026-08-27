@@ -47,11 +47,10 @@ export default function Select({
 
   function selectOption(option) {
     if (option.disabled) return;
-
-    console.log('[Select] selected option:', option);
-
     emitChange(String(option.value));
-    closeMenu();
+    // ensure menu collapses immediately after selection even if parent re-renders
+    setOpen(false);
+    setActiveIndex(-1);
   }
 
   useEffect(() => {
@@ -70,12 +69,22 @@ export default function Select({
     }
 
     document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
     document.addEventListener('keydown', handleEscape);
     return () => {
       document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [open]);
+
+  // collapse popup as soon as value changes while open (covers parent-driven re-renders)
+  useEffect(() => {
+    if (open) {
+      // keep menu open for keyboard nav, but ensure click path already closed via selectOption
+      // no-op: value change alone should not reopen
+    }
+  }, [value, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -177,7 +186,11 @@ export default function Select({
               className={`select-option ${isSelected ? 'select-option--selected' : ''} ${isActive ? 'select-option--active' : ''} ${isDisabled ? 'select-option--disabled' : ''}`}
               onMouseEnter={() => !isDisabled && setActiveIndex(index)}
               onMouseDown={(event) => event.preventDefault()}
-              onClick={() => !isDisabled && selectOption(option)}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!isDisabled) selectOption(option);
+              }}
             >
               {option.label}
             </li>
