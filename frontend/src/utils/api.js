@@ -116,3 +116,12 @@ export const resignFromTeam = (teamId) =>
 
 export const disbandTeam = (teamId) =>
   request(`/teams/${teamId}`, { method: 'DELETE' });
+
+export const createDonation = (payload) =>
+  request('/donations', { method: 'POST', body: JSON.stringify(payload) });
+
+export const fetchMyDonations = () => request('/donations/mine');
+
+export const fetchDonations = () => request('/donations');
+
+export const fetchDonation = (id) => request(`/donations/${id}`);

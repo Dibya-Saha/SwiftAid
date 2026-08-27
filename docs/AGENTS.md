@@ -79,6 +79,14 @@ Never start coding before reading these files.
 - Victim registration, disaster linkage, shelter assignment, and capacity checks
 - Inventory listing with transactional Add stock and Remove stock operations
 
+### Donations
+
+- Donors can submit one or more items to a warehouse in a single donation.
+- Duplicate item IDs are merged by summing their quantities.
+- Donation creation updates donation records and warehouse inventory transactionally.
+- Donors can view their own donation history.
+- Admins can view all donations from the Donations dashboard tab.
+
 ### Locations
 
 - Automatically created during disaster registration
@@ -88,7 +96,7 @@ Never start coding before reading these files.
 
 # Remaining Modules
 
-The remaining modules are donations, relief requests, request items, and distributions.
+The remaining modules are relief requests, request items, and distributions.
 
 See the Completed Modules, Remaining Modules, Business Rules, and Roadmap sections in this file for the implementation order and pattern. Follow the same architecture and conventions used by existing modules.
 
@@ -200,10 +208,7 @@ Always:
 Example:
 
 ```js
-await pool.query(
-  "SELECT * FROM users WHERE user_id = $1",
-  [userId]
-);
+await pool.query("SELECT * FROM users WHERE user_id = $1", [userId]);
 ```
 
 ---
@@ -245,22 +250,22 @@ try {
 Protected routes must use:
 
 ```js
-requireAuth
+requireAuth;
 ```
 
 Role-restricted routes must use:
 
 ```js
-requireRole("admin")
-requireRole("team")
-requireRole("donor")
-requireRole("volunteer")
+requireRole("admin");
+requireRole("team");
+requireRole("donor");
+requireRole("volunteer");
 ```
 
 Authenticated user information comes from:
 
 ```js
-req.user
+req.user;
 ```
 
 Never trust client-supplied user IDs.
@@ -437,10 +442,10 @@ express the requirement without changing its established appearance.
 The authoritative capability and endpoint-access matrix is maintained in this
 file (Detailed Specification, Role Permissions section).
 
-- ADMIN: disasters, team review/approval, and future operational management.
+- ADMIN: disasters, team review/approval, donations, and operational management.
 - TEAM: create and manage teams.
 - VOLUNTEER: join and view teams.
-- DONOR: future donation workflows.
+- DONOR: submit donations and view personal donation history.
 
 ---
 
@@ -565,35 +570,39 @@ Authentication flow:
 
 ## Current Routes
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `POST` | `/auth/register` | Create an account |
-| `POST` | `/auth/login` | Authenticate an account |
-| `GET` | `/auth/me` | Load the authenticated profile |
-| `GET` | `/disasters` | List disasters and locations |
-| `POST` | `/disasters` | Admin creates a disaster |
-| `PATCH` | `/disasters/:id/status` | Admin updates disaster status |
-| `GET` | `/users/volunteers` | List available volunteers |
-| `POST` | `/teams` | Team user creates a team |
-| `GET` | `/teams` | Admin lists all teams |
-| `GET` | `/teams/mine` | List the caller's teams |
-| `GET` | `/teams/pending` | Admin lists pending teams |
-| `POST` | `/teams/:id/approve` | Admin approves a team; accepts an optional remark |
-| `POST` | `/teams/:id/reject` | Admin rejects a team; requires a remark |
-| `DELETE` | `/teams/:id/members/me` | Volunteer resigns from a team |
-| `DELETE` | `/teams/:id` | Team leader disbands a team |
-| `GET/POST` | `/shelters` | List shelters or admin creates one |
-| `GET/PATCH/DELETE` | `/shelters/:id` | View or admin-manage one shelter |
-| `GET/POST` | `/warehouses` | List warehouses or admin creates one |
-| `GET/PATCH/DELETE` | `/warehouses/:id` | View or admin-manage one warehouse |
-| `GET/POST` | `/items` | List items or admin creates one |
-| `GET/PATCH/DELETE` | `/items/:id` | View or admin-manage one item |
-| `GET/POST` | `/victims` | List victims or admin registers one |
-| `GET/PATCH/DELETE` | `/victims/:id` | View or admin-manage one victim |
-| `GET` | `/inventory` | List inventory |
-| `GET` | `/inventory/:id` | View one inventory record |
-| `POST` | `/inventory/adjust` | Admin adds or removes stock |
-| `DELETE` | `/inventory/:id` | Admin deletes an inventory record |
+| Method             | Endpoint                | Purpose                                                 |
+| ------------------ | ----------------------- | ------------------------------------------------------- |
+| `POST`             | `/auth/register`        | Create an account                                       |
+| `POST`             | `/auth/login`           | Authenticate an account                                 |
+| `GET`              | `/auth/me`              | Load the authenticated profile                          |
+| `GET`              | `/disasters`            | List disasters and locations                            |
+| `POST`             | `/disasters`            | Admin creates a disaster                                |
+| `PATCH`            | `/disasters/:id/status` | Admin updates disaster status                           |
+| `GET`              | `/users/volunteers`     | List available volunteers                               |
+| `POST`             | `/teams`                | Team user creates a team                                |
+| `GET`              | `/teams`                | Admin lists all teams                                   |
+| `GET`              | `/teams/mine`           | List the caller's teams                                 |
+| `GET`              | `/teams/pending`        | Admin lists pending teams                               |
+| `POST`             | `/teams/:id/approve`    | Admin approves a team; accepts an optional remark       |
+| `POST`             | `/teams/:id/reject`     | Admin rejects a team; requires a remark                 |
+| `DELETE`           | `/teams/:id/members/me` | Volunteer resigns from a team                           |
+| `DELETE`           | `/teams/:id`            | Team leader disbands a team                             |
+| `GET/POST`         | `/shelters`             | List shelters or admin creates one                      |
+| `GET/PATCH/DELETE` | `/shelters/:id`         | View or admin-manage one shelter                        |
+| `GET/POST`         | `/warehouses`           | List warehouses or admin creates one                    |
+| `GET/PATCH/DELETE` | `/warehouses/:id`       | View or admin-manage one warehouse                      |
+| `GET/POST`         | `/items`                | List items or admin creates one                         |
+| `GET/PATCH/DELETE` | `/items/:id`            | View or admin-manage one item                           |
+| `GET/POST`         | `/victims`              | List victims or admin registers one                     |
+| `GET/PATCH/DELETE` | `/victims/:id`          | View or admin-manage one victim                         |
+| `GET`              | `/inventory`            | List inventory                                          |
+| `GET`              | `/inventory/:id`        | View one inventory record                               |
+| `POST`             | `/inventory/adjust`     | Admin adds or removes stock                             |
+| `DELETE`           | `/inventory/:id`        | Admin deletes an inventory record                       |
+| `POST`             | `/donations`            | Donor creates a donation and adds stock transactionally |
+| `GET`              | `/donations/mine`       | Donor lists their own donations                         |
+| `GET`              | `/donations`            | Admin lists all donations                               |
+| `GET`              | `/donations/:id`        | Authenticated user views an allowed donation            |
 
 ## Business Rules
 
@@ -642,18 +651,30 @@ Authentication flow:
 - Both operations are transactional.
 - Removal is rejected if it would make stock negative.
 
+### Donations
+
+- Only donors can create donations.
+- A donation must reference an existing warehouse and one or more existing items.
+- Each quantity must be a positive integer; a maximum of 20 items is accepted per request.
+- Duplicate item IDs are merged before donation and inventory records are created.
+- Donation records and inventory updates are committed together transactionally.
+- Donors can list only their own donations; admins can list all donations.
+
 ## Role Permissions
 
-| Capability | ADMIN | TEAM | VOLUNTEER | DONOR |
-|---|--:|--:|--:|--:|
-| Access own dashboard | Yes | Yes | Yes | Yes |
-| View disasters | Yes | Yes | Yes | Yes |
-| Create or update disasters | Yes | No | No | No |
-| Create and manage teams | No | Yes | No | No |
-| Approve or reject teams | Yes | No | No | No |
-| View shelters, warehouses, items, victims, and inventory | Yes | Yes | Yes | Yes |
-| Manage shelters, warehouses, items, victims, and inventory | Yes | No | No | No |
-| Resign from a team | No | No | Yes | No |
+| Capability                                                 | ADMIN | TEAM | VOLUNTEER | DONOR |
+| ---------------------------------------------------------- | ----: | ---: | --------: | ----: |
+| Access own dashboard                                       |   Yes |  Yes |       Yes |   Yes |
+| View disasters                                             |   Yes |  Yes |       Yes |   Yes |
+| Create or update disasters                                 |   Yes |   No |        No |    No |
+| Create and manage teams                                    |    No |  Yes |        No |    No |
+| Approve or reject teams                                    |   Yes |   No |        No |    No |
+| View shelters, warehouses, items, victims, and inventory   |   Yes |  Yes |       Yes |   Yes |
+| Manage shelters, warehouses, items, victims, and inventory |   Yes |   No |        No |    No |
+| Create donations                                           |    No |   No |        No |   Yes |
+| View own donation history                                  |    No |   No |        No |   Yes |
+| View all donations                                         |   Yes |   No |        No |    No |
+| Resign from a team                                         |    No |   No |       Yes |    No |
 
 All future permissions must be enforced in backend middleware, not only by
 hiding frontend controls.
@@ -662,13 +683,12 @@ hiding frontend controls.
 
 ### Completed
 
-- Authentication, users, disasters, locations, teams, shelters, warehouses, items, victims, and inventory.
+- Authentication, users, disasters, locations, teams, shelters, warehouses, items, victims, inventory, and donations.
 
 ### To Do
 
-1. Donations: donor item submission, donation history, and transactional inventory update.
-2. Relief requests: shelter requests, request items, approvals, and quantity validation.
-3. Distributions: assign approved requests to warehouses and approved teams; decrement inventory transactionally.
+1. Relief requests: shelter requests, request items, approvals, and quantity validation.
+2. Distributions: assign approved requests to warehouses and approved teams; decrement inventory transactionally.
 
 Dependencies and risks:
 

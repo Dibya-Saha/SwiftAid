@@ -10,6 +10,7 @@ const warehouseRoutes = require('./routes/warehouseRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const victimRoutes = require('./routes/victimRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
+const donationRoutes = require('./routes/donationRoutes');
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use('/api/warehouses', warehouseRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/victims', victimRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/donations', donationRoutes);
 
 // Fallback 404
 app.use((req, res) => {

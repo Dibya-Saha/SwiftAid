@@ -26,14 +26,18 @@ export default function Select({
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const normalizedOptions = options.map((option) => (
-    typeof option === 'string' ? { value: option, label: option } : option
+    typeof option === 'string' ? { value: option, label: option } : { ...option }
   ));
 
   const selectedOption = normalizedOptions.find((option) => String(option.value) === String(value));
   const displayLabel = selectedOption?.label ?? placeholder;
 
   function emitChange(nextValue) {
-    onChange?.({ target: { value: nextValue } });
+    onChange?.({
+      target: {
+        value: String(nextValue),
+      },
+    });
   }
 
   function closeMenu() {
@@ -42,8 +46,11 @@ export default function Select({
   }
 
   function selectOption(option) {
-    emitChange(option.value);
-    closeMenu();
+    if (option.disabled) return;
+    emitChange(String(option.value));
+    // ensure menu collapses immediately after selection even if parent re-renders
+    setOpen(false);
+    setActiveIndex(-1);
   }
 
   useEffect(() => {
@@ -62,12 +69,22 @@ export default function Select({
     }
 
     document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
     document.addEventListener('keydown', handleEscape);
     return () => {
       document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [open]);
+
+  // collapse popup as soon as value changes while open (covers parent-driven re-renders)
+  useEffect(() => {
+    if (open) {
+      // keep menu open for keyboard nav, but ensure click path already closed via selectOption
+      // no-op: value change alone should not reopen
+    }
+  }, [value, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -94,17 +111,29 @@ export default function Select({
 
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      setActiveIndex((index) => (index + 1) % normalizedOptions.length);
+      let next = (activeIndex + 1) % normalizedOptions.length;
+      // skip disabled
+      for (let i = 0; i < normalizedOptions.length; i++) {
+        if (!normalizedOptions[next]?.disabled) break;
+        next = (next + 1) % normalizedOptions.length;
+      }
+      setActiveIndex(next);
     }
 
     if (event.key === 'ArrowUp') {
       event.preventDefault();
-      setActiveIndex((index) => (index - 1 + normalizedOptions.length) % normalizedOptions.length);
+      let prev = (activeIndex - 1 + normalizedOptions.length) % normalizedOptions.length;
+      for (let i = 0; i < normalizedOptions.length; i++) {
+        if (!normalizedOptions[prev]?.disabled) break;
+        prev = (prev - 1 + normalizedOptions.length) % normalizedOptions.length;
+      }
+      setActiveIndex(prev);
     }
 
     if (event.key === 'Enter' && activeIndex >= 0) {
       event.preventDefault();
-      selectOption(normalizedOptions[activeIndex]);
+      const opt = normalizedOptions[activeIndex];
+      if (opt && !opt.disabled) selectOption(opt);
     }
 
     if (event.key === 'Escape') {
@@ -146,16 +175,22 @@ export default function Select({
         {normalizedOptions.map((option, index) => {
           const isSelected = String(option.value) === String(value);
           const isActive = index === activeIndex;
+          const isDisabled = Boolean(option.disabled);
 
           return (
             <li
               key={`${option.value}-${option.label}`}
               role="option"
               aria-selected={isSelected}
-              className={`select-option ${isSelected ? 'select-option--selected' : ''} ${isActive ? 'select-option--active' : ''}`}
-              onMouseEnter={() => setActiveIndex(index)}
+              aria-disabled={isDisabled ? 'true' : undefined}
+              className={`select-option ${isSelected ? 'select-option--selected' : ''} ${isActive ? 'select-option--active' : ''} ${isDisabled ? 'select-option--disabled' : ''}`}
+              onMouseEnter={() => !isDisabled && setActiveIndex(index)}
               onMouseDown={(event) => event.preventDefault()}
-              onClick={() => selectOption(option)}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!isDisabled) selectOption(option);
+              }}
             >
               {option.label}
             </li>
