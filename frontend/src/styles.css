@@ -1624,6 +1624,57 @@ button {
   }
 }
 
+/* Relief Requests — compact professional table, no horizontal scroll */
+.relief-requests .section-heading h2 {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+.relief-table-wrap {
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  max-height: 52vh;
+}
+.relief-table {
+  width: 100%;
+  table-layout: fixed;
+  min-width: 0;
+}
+.relief-table th,
+.relief-table td {
+  padding: 11px 12px;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.relief-table th {
+  font-size: 10px;
+  padding: 10px 12px;
+}
+.relief-table td {
+  vertical-align: middle;
+}
+.relief-table .status-badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.relief-table .select-control--pill .select-trigger {
+  min-width: 120px;
+  max-width: 140px;
+}
+@media (max-width: 960px) {
+  .relief-table th,
+  .relief-table td {
+    padding: 9px 8px;
+    font-size: 12px;
+  }
+  .relief-table col:nth-child(1) { width: 56px !important; }
+  .relief-table col:nth-child(3) { width: 102px !important; }
+  .relief-table col:nth-child(5) { width: 96px !important; }
+  .relief-table col:nth-child(6) { width: 128px !important; }
+}
 @media (prefers-reduced-motion: reduce) {
   .tab-btn.active::after {
     animation: none;
