@@ -72,9 +72,9 @@ const LOCK_DISTRIBUTION = `SELECT d.distribution_id, d.request_id, d.warehouse_i
   WHERE d.distribution_id = $1 FOR UPDATE`;
 
 const UPDATE_DISTRIBUTION_STATUS = `UPDATE distributions
-  SET status = $2,
-      picked_up_at = CASE WHEN $2 = 'picked_up' THEN CURRENT_TIMESTAMP ELSE picked_up_at END,
-      delivered_at = CASE WHEN $2 = 'delivered' THEN CURRENT_TIMESTAMP ELSE delivered_at END
+  SET status = $2::varchar,
+      picked_up_at = CASE WHEN $2::varchar = 'picked_up' THEN CURRENT_TIMESTAMP ELSE picked_up_at END,
+      delivered_at = CASE WHEN $2::varchar = 'delivered' THEN CURRENT_TIMESTAMP ELSE delivered_at END
   WHERE distribution_id = $1
   RETURNING distribution_id, request_id, warehouse_id, assigned_team_id,
     assigned_by_admin_id, status, distributed_at, picked_up_at, delivered_at`;
