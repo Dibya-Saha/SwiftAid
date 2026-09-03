@@ -137,6 +137,23 @@ Categories are `food`, `water`, `medical`, `hygiene`, `clothing`, `shelter`,
 Admins use positive Add stock and Remove stock operations. Removal cannot make
 quantity negative.
 
+## `shelter_inventory`
+
+**Purpose:** Tracks supplies currently held by each shelter independently from
+warehouse stock.
+
+| Column | Type | Constraints |
+|---|---|---|
+| `shelter_inventory_id` | `SERIAL` / integer | Primary key |
+| `shelter_id` | `INT` | Required foreign key to `shelters.shelter_id`, cascade delete |
+| `item_id` | `INT` | Required foreign key to `items.item_id` |
+| `quantity` | `INT` | Required, default `0`, non-negative |
+
+**Unique constraint:** (`shelter_id`, `item_id`).
+
+**Example usage:** Warehouse distributions increase shelter stock; approved
+administrative adjustments record consumption or corrections.
+
 ## `victims`
 
 **Purpose:** Stores people affected by disasters and optionally assigned to shelters.
@@ -290,6 +307,9 @@ quantity negative.
   `bottle`, `can`, `set`, `pair`, and `tablet`.
 - Inventory uses one unique row per `(warehouse_id, item_id)` and cannot have
   a negative quantity.
+- Donors contribute to warehouse `inventory` only. Shelter stock is stored
+  separately in `shelter_inventory` and is updated through deliveries or
+  approved administrative adjustments.
 - Team review explanations are stored in `teams.review_remark`.
 
 Run migrations in numeric order after the base schema:
@@ -298,3 +318,5 @@ Run migrations in numeric order after the base schema:
 2. `002_team_review_remark.sql`
 3. `003_victim_disaster_relationship.sql`
 4. `004_victim_status_values.sql`
+5. `005_ensure_users_full_name.sql`
+6. `006_shelter_inventory_and_relief_donation.sql` — creates independent shelter inventory

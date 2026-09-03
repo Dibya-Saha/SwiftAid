@@ -142,10 +142,5 @@ export const updateReliefRequestItem = (requestId, itemId, quantityDispatched) =
     body: JSON.stringify({ quantity_dispatched: quantityDispatched }),
   });
 
-export const fetchEligibleReliefRequests = () => request('/relief-requests/eligible');
-
-export const donateToReliefRequest = (requestId, payload) =>
-  request(`/relief-requests/${requestId}/donate`, { method: 'POST', body: JSON.stringify(payload) });
-
 export const fetchShelterInventory = () => request('/shelter-inventory');
 export const fetchShelterInventoryByShelter = (shelterId) => request(`/shelter-inventory/${shelterId}`);
