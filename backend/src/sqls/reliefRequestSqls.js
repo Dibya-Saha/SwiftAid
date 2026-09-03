@@ -1,5 +1,5 @@
-const FIND_SHELTER = 'SELECT shelter_id, name FROM shelters WHERE shelter_id = $1';
-const FIND_ITEM = 'SELECT item_id FROM items WHERE item_id = $1';
+const FIND_SHELTER = 'SELECT shelter_id, name FROM shelters WHERE shelter_id = $1 AND archived_at IS NULL';
+const FIND_ITEM = 'SELECT item_id FROM items WHERE item_id = $1 AND archived_at IS NULL';
 
 const CREATE_RELIEF_REQUEST = `INSERT INTO relief_requests (shelter_id, requested_by_admin_id, status)
   VALUES ($1, $2, 'pending')

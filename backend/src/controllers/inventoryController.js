@@ -81,7 +81,7 @@ async function deleteInventory(req, res) {
   try {
     const result = await pool.query(DELETE_INVENTORY, [req.params.id]);
     if (!result.rows[0]) return res.status(404).json({ message: 'Inventory record not found' });
-    return res.json({ message: 'Inventory record deleted' });
+    return res.json({ message: 'Inventory record archived' });
   } catch (err) {
     console.error('[inventory/delete] error:', err);
     return res.status(500).json({ message: 'Failed to delete inventory record' });

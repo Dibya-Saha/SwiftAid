@@ -79,10 +79,10 @@ async function deleteItem(req, res) {
   try {
     const result = await pool.query(DELETE_ITEM, [req.params.id]);
     if (!result.rows[0]) return res.status(404).json({ message: 'Item not found' });
-    return res.json({ message: 'Item deleted' });
+    return res.json({ message: 'Item archived' });
   } catch (err) {
     if (err.code === '23503') {
-      return res.status(409).json({ message: 'Item cannot be deleted while inventory, donations, or requests reference it' });
+      return res.status(409).json({ message: 'Item cannot be archived because another record references it' });
     }
     console.error('[items/delete] error:', err);
     return res.status(500).json({ message: 'Failed to delete item' });

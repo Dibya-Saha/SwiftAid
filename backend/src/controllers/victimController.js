@@ -153,7 +153,7 @@ async function deleteVictim(req, res) {
   try {
     const result = await pool.query(DELETE_VICTIM, [req.params.id]);
     if (!result.rows[0]) return res.status(404).json({ message: 'Victim not found' });
-    return res.json({ message: 'Victim deleted' });
+    return res.json({ message: 'Victim archived' });
   } catch (err) {
     console.error('[victims/delete] error:', err);
     return res.status(500).json({ message: 'Failed to delete victim' });

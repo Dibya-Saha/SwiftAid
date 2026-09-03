@@ -58,12 +58,12 @@ export default function WarehouseManagementTab() {
   }
 
   async function removeWarehouse(id) {
-    if (!window.confirm('Delete this warehouse?')) return;
+    if (!window.confirm('Archive this warehouse? It will be hidden from future operations while its history is preserved.')) return;
     setMessage('');
     try {
       const result = await deleteWarehouse(id);
       setIsError(false);
-      setMessage(result.message || 'Warehouse deleted successfully.');
+      setMessage(result.message || 'Warehouse archived successfully.');
       if (editingId === id) resetForm();
       await refreshWarehouses();
     } catch (err) {
@@ -106,7 +106,7 @@ export default function WarehouseManagementTab() {
                   <tr key={warehouse.warehouse_id}>
                     <td><strong>{warehouse.name}</strong><small>#{warehouse.warehouse_id}</small></td>
                     <td>{[warehouse.district, warehouse.upazila, warehouse.union_name].filter(Boolean).join(' / ')}</td>
-                    <td><div className="button-row"><button className="btn-ghost" onClick={() => startEdit(warehouse)}>Edit</button><button className="btn-danger" onClick={() => removeWarehouse(warehouse.warehouse_id)}>Delete</button></div></td>
+                    <td><div className="button-row"><button className="btn-ghost" onClick={() => startEdit(warehouse)}>Edit</button><button className="btn-danger" onClick={() => removeWarehouse(warehouse.warehouse_id)}>Archive</button></div></td>
                   </tr>
                 ))}
               </tbody>

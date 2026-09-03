@@ -2,8 +2,8 @@ const CREATE_DONATION = `INSERT INTO donations (donor_id, warehouse_id, item_id,
   VALUES ($1, $2, $3, $4)
   RETURNING donation_id, donor_id, warehouse_id, item_id, quantity, donated_at`;
 
-const FIND_WAREHOUSE = 'SELECT warehouse_id FROM warehouses WHERE warehouse_id = $1';
-const FIND_ITEM = 'SELECT item_id FROM items WHERE item_id = $1';
+const FIND_WAREHOUSE = 'SELECT warehouse_id FROM warehouses WHERE warehouse_id = $1 AND archived_at IS NULL';
+const FIND_ITEM = 'SELECT item_id FROM items WHERE item_id = $1 AND archived_at IS NULL';
 
 const UPSERT_INVENTORY = `INSERT INTO inventory (warehouse_id, item_id, quantity)
   VALUES ($1, $2, $3)

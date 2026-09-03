@@ -53,12 +53,12 @@ export default function ItemManagementTab() {
   }
 
   async function removeItem(id) {
-    if (!window.confirm('Delete this item?')) return;
+    if (!window.confirm('Archive this item? It will be hidden from future selections while its history is preserved.')) return;
     setMessage('');
     try {
       const result = await deleteItem(id);
       setIsError(false);
-      setMessage(result.message || 'Item deleted successfully.');
+      setMessage(result.message || 'Item archived successfully.');
       if (editingId === id) resetForm();
       await refreshItems();
     } catch (err) {
@@ -100,7 +100,7 @@ export default function ItemManagementTab() {
                     <td><strong>{item.name}</strong><small>#{item.item_id}</small></td>
                     <td>{item.category || '—'}</td>
                     <td>{item.unit}</td>
-                    <td><div className="button-row"><button className="btn-ghost" onClick={() => startEdit(item)}>Edit</button><button className="btn-danger" onClick={() => removeItem(item.item_id)}>Delete</button></div></td>
+                    <td><div className="button-row"><button className="btn-ghost" onClick={() => startEdit(item)}>Edit</button><button className="btn-danger" onClick={() => removeItem(item.item_id)}>Archive</button></div></td>
                   </tr>
                 ))}
               </tbody>

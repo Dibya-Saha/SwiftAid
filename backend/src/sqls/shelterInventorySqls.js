@@ -4,8 +4,8 @@ const LIST_SHELTER_INVENTORY = `SELECT
     s.name AS shelter_name,
     i.name AS item_name, i.category, i.unit
   FROM shelter_inventory si
-  JOIN shelters s ON s.shelter_id = si.shelter_id
-  JOIN items i ON i.item_id = si.item_id
+  JOIN shelters s ON s.shelter_id = si.shelter_id AND s.archived_at IS NULL
+  JOIN items i ON i.item_id = si.item_id AND i.archived_at IS NULL
   ORDER BY s.name, i.name`;
 
 const LIST_SHELTER_INVENTORY_BY_SHELTER = `SELECT
@@ -14,8 +14,8 @@ const LIST_SHELTER_INVENTORY_BY_SHELTER = `SELECT
     s.name AS shelter_name,
     i.name AS item_name, i.category, i.unit
   FROM shelter_inventory si
-  JOIN shelters s ON s.shelter_id = si.shelter_id
-  JOIN items i ON i.item_id = si.item_id
+  JOIN shelters s ON s.shelter_id = si.shelter_id AND s.archived_at IS NULL
+  JOIN items i ON i.item_id = si.item_id AND i.archived_at IS NULL
   WHERE si.shelter_id = $1
   ORDER BY i.name`;
 
@@ -25,9 +25,9 @@ const UPSERT_SHELTER_INVENTORY = `INSERT INTO shelter_inventory (shelter_id, ite
   DO UPDATE SET quantity = shelter_inventory.quantity + EXCLUDED.quantity
   RETURNING shelter_inventory_id, shelter_id, item_id, quantity`;
 
-const FIND_SHELTER = 'SELECT shelter_id, name FROM shelters WHERE shelter_id = $1';
+const FIND_SHELTER = 'SELECT shelter_id, name FROM shelters WHERE shelter_id = $1 AND archived_at IS NULL';
 
-const FIND_ITEM = 'SELECT item_id, name, category, unit FROM items WHERE item_id = $1';
+const FIND_ITEM = 'SELECT item_id, name, category, unit FROM items WHERE item_id = $1 AND archived_at IS NULL';
 
 const ADD_SHELTER_INVENTORY = `INSERT INTO shelter_inventory (shelter_id, item_id, quantity, updated_at)
   VALUES ($1, $2, $3, CURRENT_TIMESTAMP)

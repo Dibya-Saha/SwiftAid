@@ -60,12 +60,12 @@ export default function ShelterManagementTab() {
   }
 
   async function removeShelter(id) {
-    if (!window.confirm('Delete this shelter?')) return;
+    if (!window.confirm('Archive this shelter? It will be hidden from future operations while its history is preserved.')) return;
     setMessage('');
     try {
       const result = await deleteShelter(id);
       setIsError(false);
-      setMessage(result.message || 'Shelter deleted successfully.');
+      setMessage(result.message || 'Shelter archived successfully.');
       if (editingId === id) resetForm();
       await refreshShelters();
     } catch (err) {
@@ -114,7 +114,7 @@ export default function ShelterManagementTab() {
                     <td>{[shelter.district, shelter.upazila, shelter.union_name].filter(Boolean).join(' / ')}</td>
                     <td>{shelter.address || '—'}</td>
                     <td>{shelter.capacity}</td>
-                    <td><div className="button-row"><button className="btn-ghost" onClick={() => startEdit(shelter)}>Edit</button><button className="btn-danger" onClick={() => removeShelter(shelter.shelter_id)}>Delete</button></div></td>
+                    <td><div className="button-row"><button className="btn-ghost" onClick={() => startEdit(shelter)}>Edit</button><button className="btn-danger" onClick={() => removeShelter(shelter.shelter_id)}>Archive</button></div></td>
                   </tr>
                 ))}
               </tbody>

@@ -310,7 +310,9 @@ administrative adjustments record consumption or corrections.
 - Deleting a warehouse cascades to its `inventory` rows.
 - Deleting a team cascades to its `team_members` rows.
 - Deleting a user cascades to their `team_members` rows.
-- Deleting a relief request cascades to its `request_items` rows.
+- Deleting a shelter cascades to its victims, shelter inventory, relief
+  requests, distributions, and legacy shelter donations.
+- Deleting a relief request cascades to its `request_items` and distributions.
 
 ## Application Rules and Migrations
 
@@ -326,6 +328,8 @@ administrative adjustments record consumption or corrections.
 - Donors contribute to warehouse `inventory` only. Shelter stock is stored
   separately in `shelter_inventory` and is updated through deliveries or
   approved administrative adjustments.
+- Items, shelters, warehouses, victims, and inventory records use `archived_at`
+  for removal from active operations while preserving historical records.
 - Team review explanations are stored in `teams.review_remark`.
 
 Run migrations in numeric order after the base schema:
@@ -338,3 +342,5 @@ Run migrations in numeric order after the base schema:
 6. `006_shelter_inventory_and_relief_donation.sql` — creates independent shelter inventory
 7. `007_shelter_inventory_movements.sql` — adds low-stock thresholds and adjustment history
 8. `008_distributions.sql` — adds item-level warehouse-to-shelter distribution records
+9. `009_shelter_delete_cascade.sql` — allows shelter deletion to cascade through dependent operational records
+10. `010_archive_records.sql` — preserves operational records when removed from active use

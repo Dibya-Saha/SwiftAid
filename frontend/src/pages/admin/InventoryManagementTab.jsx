@@ -47,11 +47,11 @@ export default function InventoryManagementTab() {
   }
 
   async function removeInventory(id) {
-    if (!window.confirm('Delete this inventory record?')) return;
+    if (!window.confirm('Archive this inventory record? Its history will be preserved.')) return;
     try {
       const result = await deleteInventory(id);
       setIsError(false);
-      setMessage(result.message || 'Inventory record deleted.');
+      setMessage(result.message || 'Inventory record archived.');
       await refresh();
     } catch (err) {
       setIsError(true);
@@ -78,7 +78,7 @@ export default function InventoryManagementTab() {
       </div>
       <section className="module-section">
         <div className="section-heading"><div><div className="eyebrow">Stock register</div><h2>Warehouse inventory</h2></div><span className="count-badge">{inventory.length} records</span></div>
-        {!inventory.length ? <div className="empty-state">No inventory records have been created yet.</div> : <div className="table-wrap"><table className="data-table"><thead><tr><th>Warehouse</th><th>Item</th><th>Category</th><th>Quantity</th><th>Actions</th></tr></thead><tbody>{inventory.map((record) => <tr key={record.inventory_id}><td>{record.warehouse_name}</td><td><strong>{record.item_name}</strong><small>#{record.item_id}</small></td><td>{record.category || '—'}</td><td>{record.quantity} {record.unit}</td><td><button className="btn-danger" onClick={() => removeInventory(record.inventory_id)}>Delete</button></td></tr>)}</tbody></table></div>}
+        {!inventory.length ? <div className="empty-state">No inventory records have been created yet.</div> : <div className="table-wrap"><table className="data-table"><thead><tr><th>Warehouse</th><th>Item</th><th>Category</th><th>Quantity</th><th>Actions</th></tr></thead><tbody>{inventory.map((record) => <tr key={record.inventory_id}><td>{record.warehouse_name}</td><td><strong>{record.item_name}</strong><small>#{record.item_id}</small></td><td>{record.category || '—'}</td><td>{record.quantity} {record.unit}</td><td><button className="btn-danger" onClick={() => removeInventory(record.inventory_id)}>Archive</button></td></tr>)}</tbody></table></div>}
       </section>
     </>
   );
