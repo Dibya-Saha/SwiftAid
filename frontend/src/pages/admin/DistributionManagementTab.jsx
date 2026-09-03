@@ -130,6 +130,8 @@ export default function DistributionManagementTab() {
   }) : warehouses;
   const effectiveWarehouseOptions = warehouseOptions.length ? warehouseOptions : warehouses;
 
+  const pendingHint = requests.length === 0 ? 'No approved / waiting_stock requests yet. Create a request in Relief Requests tab and set its status to Approved / Waiting Stock – Pending requests do not appear here.' : '';
+
   if (loading) return <div className="empty-state">Loading distributions...</div>;
   return <>
     <div className="info-card module-card">
@@ -137,6 +139,8 @@ export default function DistributionManagementTab() {
       <h2>Assign distribution</h2>
       {message && <div className="success-banner">{message}</div>}
       {error && <div className="error-banner">{error}</div>}
+      {pendingHint && <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 6, padding: '10px 12px', fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>{pendingHint} <span style={{ color: 'var(--text)' }}>New requests start as Pending.</span></div>}
+      {requests.length > 0 && !detail && <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>Showing {requests.length} approved / waiting_stock / partially_fulfilled requests. Pending requests must be approved in Relief Requests tab first.</div>}
       <form onSubmit={submit}>
         <div className="form-grid">
           <label className="field"><span className="field-label">Relief request</span><Select value={requestId} onChange={(e) => selectRequest(e.target.value)} placeholder="Select request" options={visibleRequests.map((r) => {
@@ -149,12 +153,13 @@ export default function DistributionManagementTab() {
           <label className="field"><span className="field-label">Approved team</span><Select value={teamId} onChange={(e) => setTeamId(e.target.value)} placeholder="Select team" options={teams.map((t) => ({ value: String(t.team_id), label: t.team_name }))} required /></label>
         </div>
         {hasNoStockForDetail && detail && <div className="error-banner">No warehouse has stock for the items in this request. Restock warehouse inventory before assigning.</div>}
-        {detail && <div className="table-wrap"><table className="data-table"><thead><tr><th>Item</th><th>Remaining</th><th>Warehouse stock</th><th>Transfer quantity</th></tr></thead><tbody>{detail.items.map((item) => {
+        {detail && <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Remaining = requested − dispatched (still needed at shelter). Warehouse stock = available in selected warehouse. Max transfer = min(Remaining, Warehouse stock).</div>}
+        {detail && <div className="table-wrap"><table className="data-table"><thead><tr><th>Item</th><th>Needed<br /><small style={{ fontWeight: 400, textTransform: 'none' }}>requested − dispatched</small></th><th>Available in warehouse</th><th>Transfer quantity</th></tr></thead><tbody>{detail.items.map((item) => {
           const remaining = item.remaining ?? item.quantity_requested - item.quantity_dispatched;
           const stock = warehouseId ? (warehouseStockForDetail.get(item.request_item_id) ?? 0) : null;
           const max = stock !== null ? Math.min(remaining, stock) : remaining;
           const insufficient = stock !== null && stock < remaining;
-          return <tr key={item.request_item_id}><td>{item.item_name} <small>{item.unit}</small></td><td>{remaining}</td><td>{stock === null ? '—' : stock}{insufficient && stock !== null && <small style={{ display: 'block', color: stock === 0 ? 'var(--danger, #e55353)' : 'var(--warning, #e5a253)' }}>{stock === 0 ? 'Out of stock' : `Limited to ${stock}`}</small>}</td><td><input className="field-input" type="number" min="0" max={max} value={quantities[item.request_item_id] || ''} onChange={(e) => setQuantities((prev) => ({ ...prev, [item.request_item_id]: e.target.value }))} disabled={!warehouseId || max === 0} placeholder={!warehouseId ? 'Select warehouse first' : max === 0 ? 'No stock' : `max ${max}`} /></td></tr>;
+          return <tr key={item.request_item_id}><td>{item.item_name} <small>{item.unit} • requested {item.quantity_requested}</small></td><td><strong>{remaining}</strong><small>needed</small></td><td>{stock === null ? '— select warehouse' : stock}{insufficient && stock !== null && <small style={{ display: 'block', color: stock === 0 ? 'var(--danger, #e55353)' : 'var(--warning, #e5a253)' }}>{stock === 0 ? 'Out of stock in this warehouse' : `Limited to ${stock} (shortage)`}</small>}</td><td><input className="field-input" type="number" min="0" max={max} value={quantities[item.request_item_id] || ''} onChange={(e) => setQuantities((prev) => ({ ...prev, [item.request_item_id]: e.target.value }))} disabled={!warehouseId || max === 0} placeholder={!warehouseId ? 'Select warehouse first' : max === 0 ? 'No stock' : `max ${max}`} /></td></tr>;
         })}</tbody></table></div>}
         <button className="btn-primary" type="submit" disabled={saving || (detail && (!warehouseId || hasNoStockForDetail))}>{saving ? 'Assigning...' : 'Assign distribution'}</button>
       </form>

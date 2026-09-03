@@ -218,22 +218,29 @@ export default function ReliefRequestManagementTab() {
             <table className="data-table relief-table">
               <colgroup>
                 <col style={{ width: '68px' }} />
-                <col style={{ width: '22%' }} />
-                <col style={{ width: '118px' }} />
-                <col style={{ width: '26%' }} />
-                <col style={{ width: '112px' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '104px' }} />
+                <col style={{ width: '28%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '110px' }} />
                 <col style={{ width: '148px' }} />
               </colgroup>
               <thead>
-                <tr><th>ID</th><th>SHELTER</th><th>STATUS</th><th>REQUESTER</th><th>DATE</th><th>ACTIONS</th></tr>
+                <tr><th>ID</th><th>SHELTER</th><th>STATUS</th><th>REQUESTER</th><th>REQUESTED ITEMS</th><th>DATE</th><th>ACTIONS</th></tr>
               </thead>
               <tbody>
-                {requests.map((r) => (
+                {requests.map((r) => {
+                  const summary = Array.isArray(r.items_summary) ? r.items_summary : (typeof r.items_summary === 'string' ? JSON.parse(r.items_summary || '[]') : []);
+                  return (
                   <tr key={r.request_id} onClick={() => viewDetail(r.request_id)} style={{ cursor: 'pointer' }}>
                     <td>#{r.request_id}</td>
                     <td title={r.shelter_name || ''}>{r.shelter_name || r.shelter_id}</td>
                     <td><span className="status-badge">{r.status}</span></td>
                     <td><strong>{r.requester_name || '—'}</strong><small>{r.requester_email || ''}</small></td>
+                    <td>
+                      <small style={{ fontWeight: 600 }}>{r.item_count || 0} items • {r.total_requested || 0} requested • {r.total_remaining ?? 0} remaining</small>
+                      {summary.length ? <div className="member-list" style={{ marginTop: 4, flexWrap: 'wrap' }}>{summary.slice(0, 3).map((it, idx) => <span key={idx} className="member-chip">{it.item_name} {it.quantity_requested} {it.unit}{it.remaining !== it.quantity_requested ? ` (${it.remaining} needed)` : ''}</span>)}{summary.length > 3 && <span className="member-chip">+{summary.length - 3} more</span>}</div> : <small style={{ color: 'var(--muted)' }}>—</small>}
+                    </td>
                     <td>{r.requested_at ? new Date(r.requested_at).toLocaleDateString() : '—'}</td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <Select
@@ -244,7 +251,8 @@ export default function ReliefRequestManagementTab() {
                       />
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

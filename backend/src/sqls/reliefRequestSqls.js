@@ -12,7 +12,11 @@ const CREATE_REQUEST_ITEM = `INSERT INTO request_items (request_id, item_id, qua
 const LIST_RELIEF_REQUESTS = `SELECT
     rr.request_id, rr.shelter_id, rr.requested_by_admin_id, rr.status, rr.requested_at,
     s.name AS shelter_name,
-    u.full_name AS requester_name, u.email AS requester_email
+    u.full_name AS requester_name, u.email AS requester_email,
+    COALESCE((SELECT COUNT(*) FROM request_items ri WHERE ri.request_id = rr.request_id), 0)::int AS item_count,
+    COALESCE((SELECT SUM(ri.quantity_requested) FROM request_items ri WHERE ri.request_id = rr.request_id), 0)::int AS total_requested,
+    COALESCE((SELECT SUM(ri.quantity_requested - ri.quantity_dispatched) FROM request_items ri WHERE ri.request_id = rr.request_id), 0)::int AS total_remaining,
+    COALESCE((SELECT json_agg(json_build_object('item_name', i.name, 'unit', i.unit, 'quantity_requested', ri.quantity_requested, 'remaining', ri.quantity_requested - ri.quantity_dispatched) ORDER BY ri.request_item_id) FROM request_items ri JOIN items i ON i.item_id = ri.item_id WHERE ri.request_id = rr.request_id), '[]'::json) AS items_summary
   FROM relief_requests rr
   JOIN shelters s ON s.shelter_id = rr.shelter_id
   JOIN users u ON u.user_id = rr.requested_by_admin_id
