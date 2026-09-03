@@ -52,15 +52,52 @@ const LIST_DISTRIBUTIONS = `SELECT d.distribution_id, d.request_id,
   GROUP BY d.distribution_id, w.name, s.name, t.team_name
   ORDER BY d.distributed_at DESC, d.distribution_id DESC`;
 
-const LIST_TEAM_DISTRIBUTIONS = `${LIST_DISTRIBUTIONS.replace(
-  'GROUP BY d.distribution_id, w.name, s.name, t.team_name',
-  "WHERE EXISTS (SELECT 1 FROM team_members tm_filter WHERE tm_filter.team_id = d.assigned_team_id AND tm_filter.user_id = $1) GROUP BY d.distribution_id, w.name, s.name, t.team_name"
-)}`;
+const LIST_TEAM_DISTRIBUTIONS = `SELECT d.distribution_id, d.request_id,
+    d.warehouse_id, d.assigned_team_id, d.assigned_by_admin_id, d.status,
+    d.distributed_at, d.picked_up_at, d.delivered_at,
+    w.name AS warehouse_name, s.name AS shelter_name, t.team_name,
+    COALESCE(json_agg(json_build_object(
+      'distribution_item_id', di.distribution_item_id,
+      'request_item_id', di.request_item_id,
+      'item_id', di.item_id,
+      'item_name', i.name,
+      'unit', i.unit,
+      'quantity', di.quantity
+    ) ORDER BY di.distribution_item_id) FILTER (WHERE di.distribution_item_id IS NOT NULL), '[]') AS items
+  FROM distributions d
+  JOIN relief_requests rr ON rr.request_id = d.request_id
+  JOIN shelters s ON s.shelter_id = rr.shelter_id
+  JOIN warehouses w ON w.warehouse_id = d.warehouse_id
+  JOIN teams t ON t.team_id = d.assigned_team_id
+  LEFT JOIN distribution_items di ON di.distribution_id = d.distribution_id
+  LEFT JOIN items i ON i.item_id = di.item_id
+  WHERE EXISTS (SELECT 1 FROM team_members tm_filter
+    WHERE tm_filter.team_id = d.assigned_team_id AND tm_filter.user_id = $1)
+  GROUP BY d.distribution_id, w.name, s.name, t.team_name
+  ORDER BY d.distributed_at DESC, d.distribution_id DESC`;
 
-const GET_DISTRIBUTION = `${LIST_DISTRIBUTIONS.replace(
-  'GROUP BY d.distribution_id, w.name, s.name, t.team_name',
-  'WHERE d.distribution_id = $1 GROUP BY d.distribution_id, w.name, s.name, t.team_name'
-)}`;
+const GET_DISTRIBUTION = `SELECT d.distribution_id, d.request_id,
+    d.warehouse_id, d.assigned_team_id, d.assigned_by_admin_id, d.status,
+    d.distributed_at, d.picked_up_at, d.delivered_at,
+    w.name AS warehouse_name, s.name AS shelter_name, t.team_name,
+    COALESCE(json_agg(json_build_object(
+      'distribution_item_id', di.distribution_item_id,
+      'request_item_id', di.request_item_id,
+      'item_id', di.item_id,
+      'item_name', i.name,
+      'unit', i.unit,
+      'quantity', di.quantity
+    ) ORDER BY di.distribution_item_id) FILTER (WHERE di.distribution_item_id IS NOT NULL), '[]') AS items
+  FROM distributions d
+  JOIN relief_requests rr ON rr.request_id = d.request_id
+  JOIN shelters s ON s.shelter_id = rr.shelter_id
+  JOIN warehouses w ON w.warehouse_id = d.warehouse_id
+  JOIN teams t ON t.team_id = d.assigned_team_id
+  LEFT JOIN distribution_items di ON di.distribution_id = d.distribution_id
+  LEFT JOIN items i ON i.item_id = di.item_id
+  WHERE d.distribution_id = $1
+  GROUP BY d.distribution_id, w.name, s.name, t.team_name
+  ORDER BY d.distributed_at DESC, d.distribution_id DESC`;
 
 const GET_DISTRIBUTION_ITEMS = `SELECT distribution_item_id, distribution_id,
     request_item_id, item_id, quantity

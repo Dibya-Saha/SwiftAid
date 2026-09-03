@@ -1,8 +1,8 @@
 const pool = require('../db');
 const {
-  TEAMS_QUERY,
-  TEAMS_GROUP_ORDER,
-  TEAM_FILTERS,
+  TEAMS_MINE_QUERY,
+  TEAMS_PENDING_QUERY,
+  TEAMS_ALL_QUERY,
   MEMBERSHIP_BY_USER,
   VOLUNTEERS_BY_IDS,
   MEMBERSHIPS_BY_IDS,
@@ -94,9 +94,15 @@ async function createTeam(req, res) {
 
 async function listTeams(req, res, mode = 'mine') {
   try {
-    const filters = TEAM_FILTERS[mode];
-    const values = mode === 'mine' ? [req.user.user_id] : [];
-    const result = await pool.query(`${TEAMS_QUERY} ${filters} ${TEAMS_GROUP_ORDER}`, values);
+    let query = TEAMS_ALL_QUERY;
+    let values = [];
+    if (mode === 'mine') {
+      query = TEAMS_MINE_QUERY;
+      values = [req.user.user_id];
+    } else if (mode === 'pending') {
+      query = TEAMS_PENDING_QUERY;
+    }
+    const result = await pool.query(query, values);
     return res.json({ teams: result.rows });
   } catch (err) {
     console.error('[teams/list] error:', err);
