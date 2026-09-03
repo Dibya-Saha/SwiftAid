@@ -272,10 +272,24 @@ administrative adjustments record consumption or corrections.
 | `assigned_by_admin_id` | `INT` | Required foreign key to `users.user_id` |
 | `status` | `VARCHAR(20)` | Nullable |
 | `distributed_at` | `TIMESTAMP` | Defaults to `CURRENT_TIMESTAMP` |
+| `picked_up_at` | `TIMESTAMP` | Nullable pickup time |
+| `delivered_at` | `TIMESTAMP` | Nullable delivery completion time |
 
 **Relationships:** Connects a relief request, warehouse, response team, and assigning admin.
 
 **Example usage:** An admin assigns an approved request to a team for dispatch from a warehouse.
+
+## `distribution_items`
+
+**Purpose:** Stores the item quantities assigned in each warehouse-to-shelter distribution.
+
+| Column | Type | Constraints |
+|---|---|---|
+| `distribution_item_id` | `SERIAL` / integer | Primary key |
+| `distribution_id` | `INT` | Required foreign key to `distributions.distribution_id`, cascade delete |
+| `request_item_id` | `INT` | Required foreign key to `request_items.request_item_id` |
+| `item_id` | `INT` | Required foreign key to `items.item_id` |
+| `quantity` | `INT` | Required, greater than zero |
 
 ## Relationship Summary
 
