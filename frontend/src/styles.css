@@ -692,6 +692,11 @@ button {
   z-index: 50;
 }
 
+.info-card > *:has(.select-control--open),
+.module-card > *:has(.select-control--open) {
+  z-index: 100;
+}
+
 .select-control--open {
   z-index: 60;
 }
