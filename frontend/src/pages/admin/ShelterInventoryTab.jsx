@@ -66,39 +66,35 @@ export default function ShelterInventoryTab() {
     }
   }
 
+  const isSuccess = message.includes('successfully');
+
   return (
     <>
-      <div className="info-card module-card" style={{ marginBottom: 16 }}>
-        <p className="eyebrow">Shelter inventory</p>
-        <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>View supplies donated to each shelter via relief requests. Inventory is independent per shelter.</p>
-        <div style={{ marginTop: 12, maxWidth: 300 }}>
-          <Select value={selected} onChange={(e) => setSelected(e.target.value)} placeholder="All shelters" options={[{ value: '', label: 'All shelters' }, ...shelters.map((s) => ({ value: String(s.shelter_id), label: s.name }))]} />
-        </div>
-        <form onSubmit={handleAdjust} className="form-grid" style={{ marginTop: 16, alignItems: 'end' }}>
-          <label className="field" style={{ margin: 0 }}>
-            <span className="field-label">Item</span>
-            <Select value={itemId} onChange={(e) => setItemId(e.target.value)} placeholder="Select item" options={items.map((item) => ({ value: String(item.item_id), label: `${item.name} (${item.unit})` }))} required />
-          </label>
-          <label className="field" style={{ margin: 0 }}>
-            <span className="field-label">Operation</span>
-            <Select value={operation} onChange={(e) => setOperation(e.target.value)} options={[{ value: 'add', label: 'Add stock' }, { value: 'remove', label: 'Consume / remove' }]} />
-          </label>
-          <label className="field" style={{ margin: 0 }}>
-            <span className="field-label">Quantity</span>
-            <input className="field-input" type="number" min="1" step="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="e.g. 20" required />
-          </label>
-          <label className="field" style={{ margin: 0 }}>
-            <span className="field-label">Reason</span>
-            <input className="field-input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Daily consumption" />
-          </label>
-          <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Update stock'}</button>
+      <div className="info-card module-card">
+        <p className="eyebrow">Adjust stock</p>
+        {message && <div className={isSuccess ? 'success-banner' : 'error-banner'}>{message}</div>}
+        <form onSubmit={handleAdjust}>
+          <div className="form-grid">
+            <div className="field"><label>Shelter</label><Select required value={selected} onChange={(e) => setSelected(e.target.value)} placeholder="Select shelter" options={[{ value: '', label: 'Select shelter' }, ...shelters.map((s) => ({ value: String(s.shelter_id), label: s.name }))]} /></div>
+            <div className="field"><label>Item</label><Select required value={itemId} onChange={(e) => setItemId(e.target.value)} placeholder="Select item" options={[{ value: '', label: 'Select item' }, ...items.map((item) => ({ value: String(item.item_id), label: `${item.name} (${item.unit})` }))]} /></div>
+          </div>
+          <div className="form-grid">
+            <div className="field"><label>Operation</label><Select value={operation} onChange={(e) => setOperation(e.target.value)} options={[{ value: 'add', label: 'Add stock' }, { value: 'remove', label: 'Remove stock' }]} /></div>
+            <div className="field"><label>Quantity</label><input required min="1" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Enter a positive amount" /></div>
+          </div>
+          <div className="field"><label>Reason <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optional)</span></label><input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Daily consumption" /></div>
+          <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving...' : operation === 'add' ? 'Add stock' : 'Remove stock'}</button>
         </form>
-        {message && <div className={message.includes('successfully') ? 'success-banner' : 'error-banner'} style={{ marginTop: 12 }}>{message}</div>}
       </div>
-      {!filtered.length ? <div className="empty-state">No shelter inventory yet. Donations via relief requests will appear here.</div> : filtered.map((g) => (
-        <section key={g.shelter_id} className="module-section" style={{ marginTop: 20 }}>
-          <div className="section-heading"><h2>{g.shelter_name}</h2><span className="count-badge">{g.items.length} items</span></div>
-           <div className="table-wrap"><table className="data-table"><thead><tr><th>Item</th><th>Category</th><th>Quantity</th><th>Stock status</th><th>Unit</th></tr></thead><tbody>{g.items.map((it) => <tr key={it.shelter_inventory_id}><td><strong>{it.item_name}</strong><small>#{it.item_id}</small></td><td>{it.category || '—'}</td><td>{it.quantity}</td><td><span className={`status-badge ${it.quantity <= it.minimum_quantity ? 'status-pending' : 'status-approved'}`}>{it.quantity <= it.minimum_quantity ? 'LOW' : 'OK'}</span></td><td>{it.unit}</td></tr>)}</tbody></table></div>
+
+      <div style={{ marginTop: 12, maxWidth: 300 }}>
+        <Select value={selected} onChange={(e) => setSelected(e.target.value)} placeholder="All shelters" options={[{ value: '', label: 'All shelters' }, ...shelters.map((s) => ({ value: String(s.shelter_id), label: s.name }))]} />
+      </div>
+
+      {!filtered.length ? <div className="empty-state" style={{ marginTop: 16 }}>No shelter inventory yet. Donations via relief requests will appear here.</div> : filtered.map((g) => (
+        <section key={g.shelter_id} className="module-section">
+          <div className="section-heading"><div><div className="eyebrow">Stock register</div><h2>{g.shelter_name}</h2></div><span className="count-badge">{g.items.length} items</span></div>
+          <div className="table-wrap"><table className="data-table"><thead><tr><th>Item</th><th>Category</th><th>Quantity</th></tr></thead><tbody>{g.items.map((it) => <tr key={it.shelter_inventory_id}><td><strong>{it.item_name}</strong><small>#{it.item_id}</small></td><td>{it.category || '—'}</td><td>{it.quantity} {it.unit}</td></tr>)}</tbody></table></div>
         </section>
       ))}
     </>

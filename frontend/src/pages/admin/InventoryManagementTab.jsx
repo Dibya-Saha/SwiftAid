@@ -10,6 +10,7 @@ export default function InventoryManagementTab() {
   const [items, setItems] = useState([]);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
+  const [filterWarehouse, setFilterWarehouse] = useState('');
 
   async function refresh() {
     const [{ inventory: inventoryRows }, { warehouses: warehouseRows }, { items: itemRows }] = await Promise.all([
@@ -59,6 +60,17 @@ export default function InventoryManagementTab() {
     }
   }
 
+  const grouped = (() => {
+    const map = {};
+    for (const record of inventory) {
+      const key = String(record.warehouse_id);
+      if (!map[key]) map[key] = { warehouse_id: record.warehouse_id, warehouse_name: record.warehouse_name, items: [] };
+      map[key].items.push(record);
+    }
+    return Object.values(map).sort((a, b) => String(a.warehouse_name).localeCompare(String(b.warehouse_name)));
+  })();
+  const filtered = filterWarehouse ? grouped.filter((g) => String(g.warehouse_id) === String(filterWarehouse)) : grouped;
+
   return (
     <>
       <div className="info-card module-card">
@@ -76,10 +88,17 @@ export default function InventoryManagementTab() {
           <button type="submit" className="btn-primary">{form.operation === 'add' ? 'Add stock' : 'Remove stock'}</button>
         </form>
       </div>
-      <section className="module-section">
-        <div className="section-heading"><div><div className="eyebrow">Stock register</div><h2>Warehouse inventory</h2></div><span className="count-badge">{inventory.length} records</span></div>
-        {!inventory.length ? <div className="empty-state">No inventory records have been created yet.</div> : <div className="table-wrap"><table className="data-table"><thead><tr><th>Warehouse</th><th>Item</th><th>Category</th><th>Quantity</th><th>Actions</th></tr></thead><tbody>{inventory.map((record) => <tr key={record.inventory_id}><td>{record.warehouse_name}</td><td><strong>{record.item_name}</strong><small>#{record.item_id}</small></td><td>{record.category || '—'}</td><td>{record.quantity} {record.unit}</td><td><button className="btn-danger" onClick={() => removeInventory(record.inventory_id)}>Archive</button></td></tr>)}</tbody></table></div>}
-      </section>
+
+      <div style={{ marginTop: 12, maxWidth: 300 }}>
+        <Select value={filterWarehouse} onChange={(e) => setFilterWarehouse(e.target.value)} placeholder="All warehouses" options={[{ value: '', label: 'All warehouses' }, ...warehouses.map((w) => ({ value: String(w.warehouse_id), label: w.name }))]} />
+      </div>
+
+      {!filtered.length ? <div className="empty-state" style={{ marginTop: 16 }}>No inventory records have been created yet.</div> : filtered.map((g) => (
+        <section key={g.warehouse_id} className="module-section">
+          <div className="section-heading"><div><div className="eyebrow">Stock register</div><h2>{g.warehouse_name}</h2></div><span className="count-badge">{g.items.length} items</span></div>
+          <div className="table-wrap"><table className="data-table"><thead><tr><th>Item</th><th>Category</th><th>Quantity</th><th>Actions</th></tr></thead><tbody>{g.items.map((record) => <tr key={record.inventory_id}><td><strong>{record.item_name}</strong><small>#{record.item_id}</small></td><td>{record.category || '—'}</td><td>{record.quantity} {record.unit}</td><td><button className="btn-danger" onClick={() => removeInventory(record.inventory_id)}>Archive</button></td></tr>)}</tbody></table></div>
+        </section>
+      ))}
     </>
   );
 }
