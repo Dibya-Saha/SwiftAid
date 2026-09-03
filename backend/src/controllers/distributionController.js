@@ -46,6 +46,9 @@ async function createDistribution(req, res) {
 
     const distribution = await client.query(sql.CREATE_DISTRIBUTION, [requestId, warehouseId, teamId, req.user.user_id]);
     for (const item of items) await client.query(sql.CREATE_DISTRIBUTION_ITEM, [distribution.rows[0].distribution_id, item.request_item_id, item.item_id, item.quantity]);
+    if (String(request.rows[0].status).toLowerCase() === 'waiting_stock') {
+      await client.query(sql.APPROVE_REQUEST, [requestId]);
+    }
     await client.query('COMMIT');
     return res.status(201).json({ distribution: distribution.rows[0], items });
   } catch (err) {
@@ -92,7 +95,10 @@ async function updateDistributionStatus(req, res) {
         await client.query(sql.INCREMENT_REQUEST_ITEM, [item.request_item_id, item.quantity]);
       }
       const all = await client.query(sql.LOCK_ALL_REQUEST_ITEMS, [current.request_id]);
-      if (all.rows.length && all.rows.every((item) => item.quantity_dispatched >= item.quantity_requested)) await client.query(sql.FULFILL_REQUEST, [current.request_id]);
+      const allFulfilled = all.rows.length && all.rows.every((item) => item.quantity_dispatched >= item.quantity_requested);
+      const someDispatched = all.rows.some((item) => item.quantity_dispatched > 0);
+      if (allFulfilled) await client.query(sql.FULFILL_REQUEST, [current.request_id]);
+      else if (someDispatched) await client.query(sql.PARTIALLY_FULFILL_REQUEST, [current.request_id]);
     } else if (status === 'cancelled' && ['assigned', 'picked_up', 'in_transit'].includes(current.status)) {
       for (const item of items) await client.query(sql.RETURN_WAREHOUSE_STOCK, [current.warehouse_id, item.item_id, item.quantity]);
     }

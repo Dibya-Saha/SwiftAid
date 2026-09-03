@@ -130,7 +130,7 @@ export default function DistributionManagementTab() {
   }) : warehouses;
   const effectiveWarehouseOptions = warehouseOptions.length ? warehouseOptions : warehouses;
 
-  const pendingHint = requests.length === 0 ? 'No approved / waiting_stock requests yet. Create a request in Relief Requests tab and set its status to Approved / Waiting Stock – Pending requests do not appear here.' : '';
+  const pendingHint = requests.length === 0 ? 'No approved / waiting_stock requests yet. New requests now start as Waiting Stock and appear here immediately.' : '';
 
   if (loading) return <div className="empty-state">Loading distributions...</div>;
   return <>
@@ -139,8 +139,8 @@ export default function DistributionManagementTab() {
       <h2>Assign distribution</h2>
       {message && <div className="success-banner">{message}</div>}
       {error && <div className="error-banner">{error}</div>}
-      {pendingHint && <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 6, padding: '10px 12px', fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>{pendingHint} <span style={{ color: 'var(--text)' }}>New requests start as Pending.</span></div>}
-      {requests.length > 0 && !detail && <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>Showing {requests.length} approved / waiting_stock / partially_fulfilled requests. Pending requests must be approved in Relief Requests tab first.</div>}
+      {pendingHint && <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 6, padding: '10px 12px', fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>{pendingHint}</div>}
+      {requests.length > 0 && !detail && <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>Showing {requests.length} waiting_stock / approved / partially_fulfilled requests. New requests now start as Waiting Stock.</div>}
       <form onSubmit={submit}>
         <div className="form-grid">
           <label className="field"><span className="field-label">Relief request</span><Select value={requestId} onChange={(e) => selectRequest(e.target.value)} placeholder="Select request" options={visibleRequests.map((r) => {

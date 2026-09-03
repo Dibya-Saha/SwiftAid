@@ -245,9 +245,13 @@ async function donateToReliefRequest(req, res) {
     // Check fulfillment: all items fulfilled?
     const allItems = await client.query(LOCK_REQUEST_ITEMS_ALL, [requestId]);
     const allFulfilled = allItems.rows.every((r) => r.quantity_dispatched >= r.quantity_requested);
+    const someDispatched = allItems.rows.some((r) => r.quantity_dispatched > 0);
     let fulfilledStatus = null;
     if (allFulfilled) {
       const upd = await client.query(UPDATE_REQUEST_STATUS, [requestId, 'fulfilled']);
+      fulfilledStatus = upd.rows[0].status;
+    } else if (someDispatched && String(rr.status).toLowerCase() !== 'partially_fulfilled') {
+      const upd = await client.query(UPDATE_REQUEST_STATUS, [requestId, 'partially_fulfilled']);
       fulfilledStatus = upd.rows[0].status;
     }
 
@@ -296,29 +300,37 @@ async function updateDispatchedQuantity(req, res) {
   if (quantityDispatched === null || quantityDispatched < 0) {
     return res.status(400).json({ message: 'quantity_dispatched must be a non-negative integer' });
   }
+  const client = await pool.connect();
   try {
-    const reqExists = await pool.query(FIND_RELIEF_REQUEST, [requestId]);
-    if (!reqExists.rows[0]) return res.status(404).json({ message: 'Relief request not found' });
+    await client.query('BEGIN');
+    const reqExists = await client.query(FIND_RELIEF_REQUEST, [requestId]);
+    if (!reqExists.rows[0]) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Relief request not found' }); }
 
-    // itemId param may refer to request_item_id or item_id. Spec says /items/:itemId
-    // We support both: first try request_item_id, then fallback to item_id lookup.
-    let requestItem = await pool.query(FIND_REQUEST_ITEM, [itemIdParam, requestId]);
+    let requestItem = await client.query(FIND_REQUEST_ITEM, [itemIdParam, requestId]);
     if (!requestItem.rows[0]) {
-      requestItem = await pool.query(FIND_REQUEST_ITEM_BY_ITEM, [requestId, itemIdParam]);
+      requestItem = await client.query(FIND_REQUEST_ITEM_BY_ITEM, [requestId, itemIdParam]);
     }
-    if (!requestItem.rows[0]) return res.status(404).json({ message: 'Request item not found' });
+    if (!requestItem.rows[0]) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Request item not found' }); }
 
     const item = requestItem.rows[0];
     if (quantityDispatched > item.quantity_requested) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ message: 'quantity_dispatched must not exceed quantity_requested' });
     }
 
-    const result = await pool.query(UPDATE_DISPATCHED, [item.request_item_id, requestId, quantityDispatched]);
+    const result = await client.query(UPDATE_DISPATCHED, [item.request_item_id, requestId, quantityDispatched]);
+    const allItems = await client.query(LOCK_REQUEST_ITEMS_ALL, [requestId]);
+    const allFulfilled = allItems.rows.every((r) => r.quantity_dispatched >= r.quantity_requested);
+    const someDispatched = allItems.rows.some((r) => r.quantity_dispatched > 0);
+    if (allFulfilled) await client.query(UPDATE_REQUEST_STATUS, [requestId, 'fulfilled']);
+    else if (someDispatched) await client.query(UPDATE_REQUEST_STATUS, [requestId, 'partially_fulfilled']);
+    await client.query('COMMIT');
     return res.json({ request_item: result.rows[0], item: result.rows[0] });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('[reliefRequests/updateDispatched] error:', err);
     return res.status(500).json({ message: 'Failed to update dispatched quantity' });
-  }
+  } finally { client.release(); }
 }
 
 module.exports = {

@@ -96,11 +96,19 @@ const LOCK_ALL_REQUEST_ITEMS = `SELECT quantity_requested, quantity_dispatched
 const FULFILL_REQUEST = `UPDATE relief_requests SET status = 'fulfilled'
   WHERE request_id = $1 RETURNING request_id, status`;
 
+const APPROVE_REQUEST = `UPDATE relief_requests SET status = 'approved'
+  WHERE request_id = $1 AND LOWER(status) = 'waiting_stock'
+  RETURNING request_id, status`;
+
+const PARTIALLY_FULFILL_REQUEST = `UPDATE relief_requests SET status = 'partially_fulfilled'
+  WHERE request_id = $1 AND LOWER(status) IN ('waiting_stock', 'approved')
+  RETURNING request_id, status`;
+
 module.exports = {
   FIND_REQUEST, FIND_TEAM, FIND_REQUEST_ITEM, RESERVE_WAREHOUSE_STOCK,
   RETURN_WAREHOUSE_STOCK, CREATE_DISTRIBUTION, CREATE_DISTRIBUTION_ITEM,
   LIST_DISTRIBUTIONS, LIST_TEAM_DISTRIBUTIONS, GET_DISTRIBUTION,
   GET_DISTRIBUTION_ITEMS, LOCK_DISTRIBUTION, UPDATE_DISTRIBUTION_STATUS,
   ADD_SHELTER_STOCK, INCREMENT_REQUEST_ITEM, LOCK_ALL_REQUEST_ITEMS,
-  FULFILL_REQUEST,
+  FULFILL_REQUEST, APPROVE_REQUEST, PARTIALLY_FULFILL_REQUEST,
 };

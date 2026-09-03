@@ -7,6 +7,8 @@ import {
   fetchMyDonations,
   fetchWarehouses,
   fetchItems,
+  fetchInventory,
+  fetchReliefRequests,
 } from "../utils/api";
 
 function WarehouseCard({ warehouse, onChange, onClear }) {
@@ -44,36 +46,70 @@ function WarehouseCard({ warehouse, onChange, onClear }) {
 function DonateTab({ onDonated }) {
   const [warehouses, setWarehouses] = useState([]);
   const [items, setItems] = useState([]);
+  const [inventory, setInventory] = useState([]);
+  const [reliefRequests, setReliefRequests] = useState([]);
   const [warehouseId, setWarehouseId] = useState("");
   const [rows, setRows] = useState([{ key: 1, itemId: "", quantity: "" }]);
   const [nextKey, setNextKey] = useState(2);
   const [editingWarehouse, setEditingWarehouse] = useState(false);
+  const [filterWarehouse, setFilterWarehouse] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    async function loadDonationOptions() {
-      setLoading(true);
-      setError("");
-      try {
-        const [wRes, iRes] = await Promise.all([
-          fetchWarehouses(),
-          fetchItems(),
-        ]);
-        setWarehouses(wRes.warehouses || wRes.data || []);
-        setItems(iRes.items || iRes.data || []);
-      } catch (err) {
-        console.error("[Donor] failed to load donation form data:", err);
-        setError(err.message || "Failed to load warehouses and items");
-      } finally {
-        setLoading(false);
-      }
+  async function loadDonationOptions() {
+    setError("");
+    try {
+      const [wRes, iRes, invRes, reqRes] = await Promise.all([
+        fetchWarehouses(),
+        fetchItems(),
+        fetchInventory(),
+        fetchReliefRequests(),
+      ]);
+      setWarehouses(wRes.warehouses || wRes.data || []);
+      setItems(iRes.items || iRes.data || []);
+      setInventory(invRes.inventory || []);
+      const reqs = reqRes.requests || reqRes.relief_requests || [];
+      setReliefRequests(reqs);
+    } catch (err) {
+      console.error("[Donor] failed to load donation form data:", err);
+      setError(err.message || "Failed to load warehouses and items");
     }
+  }
 
-    loadDonationOptions();
+  useEffect(() => {
+    async function init() { setLoading(true); await loadDonationOptions(); setLoading(false); }
+    init();
   }, []);
+
+  const stockByWarehouseItem = (() => {
+    const m = new Map();
+    for (const r of inventory) m.set(`${r.warehouse_id}:${r.item_id}`, Number(r.quantity) || 0);
+    return m;
+  })();
+
+  const grouped = (() => {
+    const map = {};
+    for (const r of inventory) {
+      const key = String(r.warehouse_id);
+      if (!map[key]) map[key] = { warehouse_id: r.warehouse_id, warehouse_name: r.warehouse_name, items: [] };
+      map[key].items.push(r);
+    }
+    return Object.values(map).sort((a, b) => String(a.warehouse_name).localeCompare(String(b.warehouse_name)));
+  })();
+
+  const neediest = [...reliefRequests]
+    .filter((r) => (r.total_remaining ?? 0) > 0 && String(r.status).toLowerCase() !== 'fulfilled' && String(r.status).toLowerCase() !== 'rejected')
+    .sort((a, b) => (b.total_remaining || 0) - (a.total_remaining || 0))
+    .slice(0, 5);
+
+  function parseSummary(r) {
+    const s = r.items_summary;
+    if (Array.isArray(s)) return s;
+    if (typeof s === 'string') { try { return JSON.parse(s); } catch { return []; } }
+    return [];
+  }
 
   function addRow() {
     if (rows.length >= 20) return;
@@ -129,10 +165,10 @@ function DonateTab({ onDonated }) {
       setSuccess(
         `Donation recorded: ${rows.length} item(s) added to inventory`,
       );
-      // Keep selected warehouse, only clear item rows and collapse any open dropdown state
       setEditingWarehouse(false);
       setRows([{ key: nextKey, itemId: "", quantity: "" }]);
       setNextKey((k) => k + 1);
+      await loadDonationOptions();
       if (onDonated) onDonated();
     } catch (err) {
       console.error("[Donor] failed to create donation:", err);
@@ -145,10 +181,15 @@ function DonateTab({ onDonated }) {
   if (loading)
     return <div className="empty-state">Loading warehouses and items…</div>;
 
-  const warehouseOptions = warehouses.map((w) => ({
-    value: String(w.warehouse_id),
-    label: w.name,
-  }));
+  const groupedFiltered = filterWarehouse ? grouped.filter((g) => String(g.warehouse_id) === String(filterWarehouse)) : grouped;
+
+  const warehouseOptions = warehouses.map((w) => {
+    const g = grouped.find((x) => String(x.warehouse_id) === String(w.warehouse_id));
+    const total = g ? g.items.reduce((s, it) => s + (Number(it.quantity) || 0), 0) : 0;
+    const lowCount = g ? g.items.filter((it) => (Number(it.quantity) || 0) <= 10).length : 0;
+    const label = g ? `${w.name} — ${g.items.length} items • ${total} total ${lowCount ? `• ${lowCount} low` : ''}` : w.name;
+    return { value: String(w.warehouse_id), label };
+  });
   const itemOptions = items.map((it) => ({
     value: String(it.item_id),
     label: `${it.name} — ${it.category} · ${it.unit}`,
@@ -159,7 +200,38 @@ function DonateTab({ onDonated }) {
   const selectedItemIds = new Set(rows.map((r) => r.itemId).filter(Boolean));
 
   return (
-    <div className="module-section">
+    <>
+      <div className="info-card module-card" style={{ marginBottom: 16 }}>
+        <p className="eyebrow">Current warehouse stock</p>
+        <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>All warehouses — low stock highlighted. Donate where needed most. <span style={{ color: 'var(--text)' }}>LOW ≤10</span></p>
+        <div style={{ marginTop: 12, maxWidth: 300 }}>
+          <Select value={filterWarehouse} onChange={(e) => setFilterWarehouse(e.target.value)} placeholder="All warehouses" options={[{ value: '', label: 'All warehouses' }, ...warehouses.map((w) => ({ value: String(w.warehouse_id), label: w.name }))]} />
+        </div>
+      </div>
+
+      {!groupedFiltered.length ? <div className="empty-state" style={{ marginBottom: 16 }}>No inventory yet — your donation will create the first stock.</div> : groupedFiltered.map((g) => (
+        <section key={g.warehouse_id} className="module-section">
+          <div className="section-heading"><div><div className="eyebrow">Stock register</div><h2>{g.warehouse_name}</h2></div><span className="count-badge">{g.items.length} items</span></div>
+          <div className="table-wrap"><table className="data-table"><thead><tr><th>Item</th><th>Category</th><th>Quantity</th><th>Status</th></tr></thead><tbody>{g.items.map((record) => {
+            const qty = Number(record.quantity) || 0;
+            const isLow = qty <= 10;
+            return <tr key={record.inventory_id}><td><strong>{record.item_name}</strong><small>#{record.item_id}</small></td><td>{record.category || '—'}</td><td>{qty} {record.unit}</td><td><span className={`status-badge ${isLow ? 'status-pending' : 'status-approved'}`}>{isLow ? 'LOW' : 'OK'}</span></td></tr>;
+          })}</tbody></table></div>
+        </section>
+      ))}
+
+      {neediest.length > 0 && (
+        <section className="module-section">
+          <div className="section-heading"><div><div className="eyebrow">Highest need</div><h2>Neediest relief requests</h2></div><span className="count-badge">{neediest.length} shown</span></div>
+          <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 8 }}>Sorted by total remaining (requested − dispatched). Donating these items helps most.</p>
+          <div className="table-wrap"><table className="data-table"><thead><tr><th>Request</th><th>Shelter</th><th>Needed items</th><th>Total remaining</th></tr></thead><tbody>{neediest.map((r) => {
+            const summary = parseSummary(r);
+            return <tr key={r.request_id}><td>#{r.request_id} <small className="status-badge" style={{ marginLeft: 6 }}>{r.status}</small></td><td>{r.shelter_name}</td><td><div className="member-list" style={{ flexWrap: 'wrap' }}>{summary.map((it, idx) => <span key={idx} className="member-chip">{it.item_name} {it.remaining} {it.unit} needed<small style={{ marginLeft: 4, opacity: 0.8 }}>req {it.quantity_requested}</small></span>)}</div></td><td><strong>{r.total_remaining}</strong></td></tr>;
+          })}</tbody></table></div>
+        </section>
+      )}
+
+      <div className="module-section">
       <h3 className="section-heading">Donate supplies</h3>
       <p
         style={{
@@ -227,6 +299,9 @@ function DonateTab({ onDonated }) {
                 selectedItemIds.has(opt.value) &&
                 String(opt.value) !== String(row.itemId),
             }));
+            const stockInSelected = warehouseId && row.itemId ? (stockByWarehouseItem.get(`${warehouseId}:${row.itemId}`) ?? 0) : null;
+            const stockTotal = row.itemId ? (() => { let t=0; for (const r of inventory) if (String(r.item_id)===String(row.itemId)) t+= Number(r.quantity)||0; return t; })() : null;
+            const isLow = stockInSelected !== null && stockInSelected <= 10;
             return (
               <div
                 key={row.key}
@@ -239,7 +314,7 @@ function DonateTab({ onDonated }) {
                 }}
               >
                 <label className="field" style={{ margin: 0 }}>
-                  <span className="field-label">Item</span>
+                  <span className="field-label">Item {stockInSelected !== null && <small style={{ fontWeight: 400, color: isLow ? 'var(--danger, #e55353)' : 'var(--muted)' }}>— {stockInSelected} in {selectedWarehouse ? selectedWarehouse.name : 'warehouse'}{isLow ? ' • LOW' : ''} {stockTotal !== null && stockInSelected !== stockTotal ? `• ${stockTotal} total` : ''}</small>}</span>
                   <Select
                     value={row.itemId}
                     onChange={(e) =>
@@ -249,6 +324,7 @@ function DonateTab({ onDonated }) {
                     placeholder="Select item"
                     required
                   />
+                  {row.itemId && !warehouseId && stockTotal !== null && <small style={{ color: 'var(--muted)', marginTop: 4, display: 'block' }}>Total across all warehouses: {stockTotal} {items.find((it)=>String(it.item_id)===String(row.itemId))?.unit || ''} — select a warehouse to see per-warehouse stock</small>}
                 </label>
                 <label className="field" style={{ margin: 0 }}>
                   <span className="field-label">Quantity</span>
@@ -296,7 +372,8 @@ function DonateTab({ onDonated }) {
           </button>
         </div>
       </form>
-    </div>
+      </div>
+    </>
   );
 }
 
