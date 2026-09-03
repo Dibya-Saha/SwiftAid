@@ -29,11 +29,11 @@ const INSERT_SHELTER = `INSERT INTO shelters (name, address, capacity, admin_id,
 
 const UPDATE_SHELTER = `UPDATE shelters
   SET name = $1, address = $2, capacity = $3, location_id = $4
-  WHERE shelter_id = $5 AND archived_at IS NULL
+  WHERE shelter_id = $5 AND admin_id = $6 AND archived_at IS NULL
   RETURNING shelter_id, name, address, capacity, admin_id, location_id`;
 
 const DELETE_SHELTER = `UPDATE shelters SET archived_at = CURRENT_TIMESTAMP
-  WHERE shelter_id = $1 AND archived_at IS NULL
+  WHERE shelter_id = $1 AND admin_id = $2 AND archived_at IS NULL
   RETURNING shelter_id`;
 
 module.exports = {

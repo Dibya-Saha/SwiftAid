@@ -29,11 +29,11 @@ const INSERT_WAREHOUSE = `INSERT INTO warehouses (name, admin_id, location_id)
 
 const UPDATE_WAREHOUSE = `UPDATE warehouses
   SET name = $1, location_id = $2
-  WHERE warehouse_id = $3 AND archived_at IS NULL
+  WHERE warehouse_id = $3 AND admin_id = $4 AND archived_at IS NULL
   RETURNING warehouse_id, name, admin_id, location_id`;
 
 const DELETE_WAREHOUSE = `UPDATE warehouses SET archived_at = CURRENT_TIMESTAMP
-  WHERE warehouse_id = $1 AND archived_at IS NULL
+  WHERE warehouse_id = $1 AND admin_id = $2 AND archived_at IS NULL
   RETURNING warehouse_id`;
 
 module.exports = {
