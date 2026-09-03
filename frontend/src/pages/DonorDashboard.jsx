@@ -7,6 +7,8 @@ import {
   fetchMyDonations,
   fetchWarehouses,
   fetchItems,
+  fetchEligibleReliefRequests,
+  donateToReliefRequest,
 } from "../utils/api";
 
 function WarehouseCard({ warehouse, onChange, onClear }) {
@@ -300,6 +302,96 @@ function DonateTab({ onDonated }) {
   );
 }
 
+function ReliefRequestsTab({ refreshKey, onDonated }) {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [donateState, setDonateState] = useState({}); // { [request_id_item_id]: qty string }
+  const [submitting, setSubmitting] = useState("");
+
+  async function load() {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetchEligibleReliefRequests();
+      setRequests(res.requests || res.relief_requests || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, [refreshKey]);
+
+  async function handleDonate(reqId, item) {
+    const key = `${reqId}_${item.item_id}`;
+    const qtyStr = donateState[key];
+    const qty = Number(qtyStr);
+    if (!qtyStr || !Number.isInteger(qty) || qty <= 0) {
+      setError("Enter a positive integer quantity");
+      return;
+    }
+    if (qty > item.remaining) {
+      setError(`Cannot donate more than remaining ${item.remaining} ${item.unit}`);
+      return;
+    }
+    setError("");
+    setSuccess("");
+    setSubmitting(key);
+    try {
+      await donateToReliefRequest(reqId, { item_id: item.item_id, quantity: qty });
+      setSuccess(`Donated ${qty} ${item.unit} of ${item.item_name} to ${requests.find((r) => r.request_id === reqId)?.shelter_name || 'shelter'}`);
+      setDonateState((prev) => ({ ...prev, [key]: "" }));
+      await load();
+      if (onDonated) onDonated();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting("");
+    }
+  }
+
+  if (loading) return <div className="empty-state">Loading relief requests…</div>;
+  if (error && requests.length === 0) return <div className="error-banner">{error}</div>;
+  if (requests.length === 0) return <div className="empty-state">No relief requests need donations right now.</div>;
+
+  return (
+    <div className="module-section">
+      <h3 className="section-heading">Available relief requests</h3>
+      <p style={{ color: "var(--muted)", marginBottom: "1rem", fontSize: "0.9rem" }}>Donate toward a shelter's remaining shortage. Only the quantity still needed is shown.</p>
+      {error && <div className="error-banner">{error}</div>}
+      {success && <div className="success-banner">{success}</div>}
+      <div className="card-grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))" }}>
+        {requests.map((req) => (
+          <div key={req.request_id} className="info-card">
+            <p className="eyebrow">Shelter</p>
+            <h4 style={{ margin: "4px 0 12px", fontFamily: "var(--font-display)" }}>{req.shelter_name}</h4>
+            <div style={{ display: "grid", gap: 10 }}>
+              {req.items.map((it) => {
+                const key = `${req.request_id}_${it.item_id}`;
+                return (
+                  <div key={it.item_id} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 6, background: "rgba(255,255,255,0.02)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <strong style={{ fontSize: 14 }}>{it.item_name}</strong>
+                      <span className="status-badge">{it.remaining} {it.unit} remaining</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <input type="number" min="1" max={it.remaining} step="1" placeholder="Qty" value={donateState[key] || ""} onChange={(e) => setDonateState((prev) => ({ ...prev, [key]: e.target.value }))} style={{ flex: 1, background: "var(--panel)", border: "1px solid var(--border)", color: "var(--text)", padding: "8px 10px", borderRadius: 4, fontSize: 13 }} />
+                      <button className="btn-primary" style={{ width: "auto", marginTop: 0, padding: "8px 14px" }} disabled={submitting === key} onClick={() => handleDonate(req.request_id, it)}>{submitting === key ? "…" : "Donate"}</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function HistoryTab({ refreshKey }) {
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -371,9 +463,11 @@ function HistoryTab({ refreshKey }) {
 export default function DonorDashboard() {
   const [activeTab, setActiveTab] = useState("disasters");
   const [historyRefresh, setHistoryRefresh] = useState(0);
+  const [reliefRefresh, setReliefRefresh] = useState(0);
 
   const tabs = [
     { id: "disasters", label: "Disasters" },
+    { id: "relief", label: "Relief Requests" },
     { id: "donate", label: "Donate" },
     { id: "history", label: "History" },
   ];
@@ -411,6 +505,7 @@ export default function DonorDashboard() {
         aria-labelledby={`tab-${activeTab}`}
       >
         {activeTab === "disasters" && <DisasterList />}
+        {activeTab === "relief" && <ReliefRequestsTab refreshKey={reliefRefresh} onDonated={() => { setHistoryRefresh((k) => k + 1); setReliefRefresh((k) => k + 1); }} />}
         {activeTab === "donate" && (
           <DonateTab onDonated={() => setHistoryRefresh((k) => k + 1)} />
         )}

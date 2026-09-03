@@ -12,6 +12,14 @@ const {
   FIND_REQUEST_ITEM,
   FIND_REQUEST_ITEM_BY_ITEM,
   UPDATE_DISPATCHED,
+  LIST_ELIGIBLE_REQUESTS,
+  GET_ELIGIBLE_REQUEST_ITEMS,
+  LOCK_RELIEF_REQUEST,
+  LOCK_REQUEST_ITEM,
+  LOCK_REQUEST_ITEMS_ALL,
+  UPDATE_DISPATCHED_INCREMENT,
+  CREATE_DONATION_FOR_REQUEST,
+  UPSERT_SHELTER_INVENTORY_TX,
 } = require('../sqls/reliefRequestSqls');
 
 const ALLOWED_STATUSES = ['pending', 'approved', 'rejected', 'fulfilled'];
@@ -117,11 +125,146 @@ async function getReliefRequest(req, res) {
     const result = await pool.query(GET_RELIEF_REQUEST, [id]);
     if (!result.rows[0]) return res.status(404).json({ message: 'Relief request not found' });
     const itemsResult = await pool.query(GET_REQUEST_ITEMS, [id]);
-    const request = { ...result.rows[0], items: itemsResult.rows };
-    return res.json({ request, items: itemsResult.rows });
+    const enriched = itemsResult.rows.map((r) => ({ ...r, remaining: r.quantity_requested - r.quantity_dispatched }));
+    const request = { ...result.rows[0], items: enriched };
+    return res.json({ request, items: enriched });
   } catch (err) {
     console.error('[reliefRequests/get] error:', err);
     return res.status(500).json({ message: 'Failed to load relief request' });
+  }
+}
+
+async function listEligibleRequests(req, res) {
+  try {
+    const result = await pool.query(LIST_ELIGIBLE_REQUESTS);
+    const requests = [];
+    for (const r of result.rows) {
+      const itemsRes = await pool.query(GET_ELIGIBLE_REQUEST_ITEMS, [r.request_id]);
+      const items = itemsRes.rows.map((it) => ({
+        request_item_id: it.request_item_id,
+        item_id: it.item_id,
+        item_name: it.item_name,
+        unit: it.unit,
+        remaining: Number(it.remaining),
+      }));
+      if (items.length === 0) continue;
+      requests.push({ request_id: r.request_id, shelter_id: r.shelter_id, shelter_name: r.shelter_name, items });
+    }
+    return res.json({ requests, relief_requests: requests });
+  } catch (err) {
+    console.error('[reliefRequests/listEligible] error:', err);
+    return res.status(500).json({ message: 'Failed to load eligible requests' });
+  }
+}
+
+async function donateToReliefRequest(req, res) {
+  const requestId = integer(req.params.id);
+  if (requestId === null) return res.status(400).json({ message: 'Invalid request id' });
+
+  // Support both single item payload and items array
+  let donations = [];
+  if (Array.isArray(req.body.items)) {
+    donations = req.body.items;
+  } else {
+    const itemId = integer(req.body.item_id);
+    const qty = integer(req.body.quantity);
+    if (itemId !== null && qty !== null) donations = [{ item_id: itemId, quantity: qty }];
+    else if (req.body.item_id !== undefined || req.body.quantity !== undefined) {
+      return res.status(400).json({ message: 'item_id and quantity are required' });
+    } else {
+      return res.status(400).json({ message: 'item_id and quantity or items array is required' });
+    }
+  }
+  if (donations.length === 0) return res.status(400).json({ message: 'At least one donation item is required' });
+  if (donations.length > 20) return res.status(400).json({ message: 'Maximum 20 items per donation' });
+
+  const merged = new Map();
+  for (const d of donations) {
+    const itemId = integer(d.item_id);
+    const qty = integer(d.quantity);
+    if (itemId === null || qty === null || qty <= 0) {
+      return res.status(400).json({ message: 'Each item requires valid item_id and positive quantity' });
+    }
+    merged.set(itemId, (merged.get(itemId) || 0) + qty);
+  }
+  const itemsToDonate = Array.from(merged, ([item_id, quantity]) => ({ item_id, quantity }));
+
+  const donorId = req.user.user_id;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const lockedReq = await client.query(LOCK_RELIEF_REQUEST, [requestId]);
+    if (!lockedReq.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Relief request not found' });
+    }
+    const rr = lockedReq.rows[0];
+    const statusLower = String(rr.status || 'pending').toLowerCase();
+    if (statusLower === 'rejected') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: 'Cannot donate to a rejected request' });
+    }
+    if (statusLower === 'fulfilled') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: 'Cannot donate to a fulfilled request' });
+    }
+
+    const shelterId = rr.shelter_id;
+    const createdDonations = [];
+    const updatedItems = [];
+    const shelterInventories = [];
+
+    for (const { item_id, quantity } of itemsToDonate) {
+      const lockedItem = await client.query(LOCK_REQUEST_ITEM, [requestId, item_id]);
+      if (!lockedItem.rows[0]) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ message: `Request item not found for item_id: ${item_id}` });
+      }
+      const ri = lockedItem.rows[0];
+      const remaining = ri.quantity_requested - ri.quantity_dispatched;
+      if (remaining <= 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: `Item ${item_id} has no remaining shortage` });
+      }
+      if (quantity > remaining) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: `Donation quantity ${quantity} exceeds remaining ${remaining} for item ${item_id}` });
+      }
+
+      const donationRes = await client.query(CREATE_DONATION_FOR_REQUEST, [donorId, shelterId, requestId, item_id, quantity]);
+      createdDonations.push(donationRes.rows[0]);
+
+      const updRes = await client.query(UPDATE_DISPATCHED_INCREMENT, [ri.request_item_id, requestId, quantity]);
+      updatedItems.push(updRes.rows[0]);
+
+      const invRes = await client.query(UPSERT_SHELTER_INVENTORY_TX, [shelterId, item_id, quantity]);
+      shelterInventories.push(invRes.rows[0]);
+    }
+
+    // Check fulfillment: all items fulfilled?
+    const allItems = await client.query(LOCK_REQUEST_ITEMS_ALL, [requestId]);
+    const allFulfilled = allItems.rows.every((r) => r.quantity_dispatched >= r.quantity_requested);
+    let fulfilledStatus = null;
+    if (allFulfilled) {
+      const upd = await client.query(UPDATE_REQUEST_STATUS, [requestId, 'fulfilled']);
+      fulfilledStatus = upd.rows[0].status;
+    }
+
+    await client.query('COMMIT');
+    return res.status(201).json({
+      donations: createdDonations,
+      updated_items: updatedItems,
+      shelter_inventories: shelterInventories,
+      fulfilled: allFulfilled,
+      status: fulfilledStatus,
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[reliefRequests/donate] error:', err);
+    return res.status(500).json({ message: 'Failed to process donation' });
+  } finally {
+    client.release();
   }
 }
 
@@ -184,4 +327,6 @@ module.exports = {
   getReliefRequest,
   updateReliefRequestStatus,
   updateDispatchedQuantity,
+  listEligibleRequests,
+  donateToReliefRequest,
 };

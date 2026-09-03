@@ -7,6 +7,7 @@ import WarehouseManagementTab from "./admin/WarehouseManagementTab";
 import ItemManagementTab from "./admin/ItemManagementTab";
 import VictimManagementTab from "./admin/VictimManagementTab";
 import InventoryManagementTab from "./admin/InventoryManagementTab";
+import ShelterInventoryTab from "./admin/ShelterInventoryTab";
 import DonationManagementTab from "./admin/DonationManagementTab";
 import ReliefRequestManagementTab from "./admin/ReliefRequestManagementTab";
 
@@ -128,6 +129,16 @@ export default function AdminDashboard() {
       ),
     },
     {
+      id: "shelterInventory",
+      label: "Shelter Stock",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      ),
+    },
+    {
       id: "inventory",
       label: "Inventory",
       icon: (
@@ -231,6 +242,7 @@ export default function AdminDashboard() {
         {activeTab === "item" && <ItemManagementTab />}
         {activeTab === "victim" && <VictimManagementTab />}
         {activeTab === "inventory" && <InventoryManagementTab />}
+        {activeTab === "shelterInventory" && <ShelterInventoryTab />}
         {activeTab === "donation" && <DonationManagementTab />}
         {activeTab === "relief" && <ReliefRequestManagementTab />}
       </div>
