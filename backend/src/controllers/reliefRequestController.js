@@ -22,7 +22,7 @@ const {
   UPSERT_SHELTER_INVENTORY_TX,
 } = require('../sqls/reliefRequestSqls');
 
-const ALLOWED_STATUSES = ['pending', 'approved', 'rejected', 'fulfilled'];
+const ALLOWED_STATUSES = ['pending', 'waiting_stock', 'approved', 'partially_fulfilled', 'rejected', 'fulfilled'];
 
 function integer(value) {
   const parsed = Number(value);

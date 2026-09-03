@@ -146,3 +146,10 @@ export const fetchShelterInventory = () => request('/shelter-inventory');
 export const fetchShelterInventoryByShelter = (shelterId) => request(`/shelter-inventory/${shelterId}`);
 export const adjustShelterInventory = (payload) =>
   request('/shelter-inventory/adjust', { method: 'POST', body: JSON.stringify(payload) });
+
+export const createDistribution = (payload) =>
+  request('/distributions', { method: 'POST', body: JSON.stringify(payload) });
+export const fetchDistributions = () => request('/distributions');
+export const fetchMyDistributions = () => request('/distributions/mine');
+export const updateDistributionStatus = (id, status) =>
+  request(`/distributions/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });

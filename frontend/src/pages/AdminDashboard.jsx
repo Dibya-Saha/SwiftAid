@@ -10,6 +10,7 @@ import InventoryManagementTab from "./admin/InventoryManagementTab";
 import ShelterInventoryTab from "./admin/ShelterInventoryTab";
 import DonationManagementTab from "./admin/DonationManagementTab";
 import ReliefRequestManagementTab from "./admin/ReliefRequestManagementTab";
+import DistributionManagementTab from "./admin/DistributionManagementTab";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("disaster");
@@ -197,6 +198,15 @@ export default function AdminDashboard() {
         </svg>
       ),
     },
+    {
+      id: "distribution",
+      label: "Distributions",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 12h18" /><path d="m13 6 6 6-6 6" /><path d="M3 6v12" />
+        </svg>
+      ),
+    },
   ];
 
   const tabNav = (
@@ -245,6 +255,7 @@ export default function AdminDashboard() {
         {activeTab === "shelterInventory" && <ShelterInventoryTab />}
         {activeTab === "donation" && <DonationManagementTab />}
         {activeTab === "relief" && <ReliefRequestManagementTab />}
+        {activeTab === "distribution" && <DistributionManagementTab />}
       </div>
     </DashboardShell>
   );

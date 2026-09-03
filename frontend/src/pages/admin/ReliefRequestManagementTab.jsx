@@ -10,7 +10,7 @@ import {
   fetchItems,
 } from '../../utils/api';
 
-const STATUSES = ['pending', 'approved', 'rejected', 'fulfilled'];
+const STATUSES = ['pending', 'waiting_stock', 'approved', 'partially_fulfilled', 'rejected', 'fulfilled'];
 
 function emptyRow() {
   return { item_id: '', quantity_requested: '' };

@@ -323,3 +323,4 @@ Run migrations in numeric order after the base schema:
 5. `005_ensure_users_full_name.sql`
 6. `006_shelter_inventory_and_relief_donation.sql` — creates independent shelter inventory
 7. `007_shelter_inventory_movements.sql` — adds low-stock thresholds and adjustment history
+8. `008_distributions.sql` — adds item-level warehouse-to-shelter distribution records
