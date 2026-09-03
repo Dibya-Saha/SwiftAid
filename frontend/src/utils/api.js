@@ -144,3 +144,5 @@ export const updateReliefRequestItem = (requestId, itemId, quantityDispatched) =
 
 export const fetchShelterInventory = () => request('/shelter-inventory');
 export const fetchShelterInventoryByShelter = (shelterId) => request(`/shelter-inventory/${shelterId}`);
+export const adjustShelterInventory = (payload) =>
+  request('/shelter-inventory/adjust', { method: 'POST', body: JSON.stringify(payload) });

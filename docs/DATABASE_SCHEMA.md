@@ -148,6 +148,8 @@ warehouse stock.
 | `shelter_id` | `INT` | Required foreign key to `shelters.shelter_id`, cascade delete |
 | `item_id` | `INT` | Required foreign key to `items.item_id` |
 | `quantity` | `INT` | Required, default `0`, non-negative |
+| `minimum_quantity` | `INT` | Required, default `0`, non-negative low-stock threshold |
+| `updated_at` | `TIMESTAMP` | Last stock update time |
 
 **Unique constraint:** (`shelter_id`, `item_id`).
 
@@ -320,3 +322,4 @@ Run migrations in numeric order after the base schema:
 4. `004_victim_status_values.sql`
 5. `005_ensure_users_full_name.sql`
 6. `006_shelter_inventory_and_relief_donation.sql` — creates independent shelter inventory
+7. `007_shelter_inventory_movements.sql` — adds low-stock thresholds and adjustment history
