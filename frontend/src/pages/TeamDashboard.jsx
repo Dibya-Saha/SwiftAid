@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import DashboardShell from '../components/DashboardShell';
 import DisasterList from '../components/DisasterList';
 import Select from '../components/Select';
-import { createTeam, fetchMyTeams, fetchVolunteers, disbandTeam } from '../utils/api';
+import { createTeam, fetchMyDistributions, fetchMyTeams, fetchVolunteers, disbandTeam, updateDistributionStatus } from '../utils/api';
 import { getUser } from '../utils/auth';
 
 function statusLabel(status) {
@@ -164,6 +164,31 @@ function MembershipsTab({ teams, currentUserId, onDisband }) {
   );
 }
 
+function DistributionTab() {
+  const [distributions, setDistributions] = useState([]);
+  const [error, setError] = useState('');
+
+  async function load() {
+    try {
+      const data = await fetchMyDistributions();
+      setDistributions(data.distributions || []);
+    } catch (err) { setError(err.message); }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function changeStatus(id, status) {
+    try { await updateDistributionStatus(id, status); await load(); }
+    catch (err) { setError(err.message); }
+  }
+
+  return <section className="module-section">
+    <div className="section-heading"><div><div className="eyebrow">Assigned logistics</div><h2>Delivery tasks</h2></div><span className="count-badge">{distributions.length} total</span></div>
+    {error && <div className="error-banner">{error}</div>}
+    {!distributions.length ? <div className="empty-state">No delivery tasks assigned.</div> : <div className="team-grid">{distributions.map((distribution) => <article className="info-card" key={distribution.distribution_id}><div className="team-card__header"><span className="eyebrow">Distribution #{distribution.distribution_id}</span><span className="status-badge">{distribution.status}</span></div><h3>{distribution.shelter_name}</h3><p className="muted">Pick up from {distribution.warehouse_name}</p><div className="member-list">{(distribution.items || []).map((item) => <span className="member-chip" key={item.distribution_item_id}>{item.item_name} · {item.quantity} {item.unit}</span>)}</div><div className="button-row">{distribution.status === 'assigned' && <button className="btn-secondary" type="button" onClick={() => changeStatus(distribution.distribution_id, 'picked_up')}>Mark picked up</button>}{distribution.status === 'picked_up' && <button className="btn-secondary" type="button" onClick={() => changeStatus(distribution.distribution_id, 'in_transit')}>Start delivery</button>}{distribution.status === 'in_transit' && <button className="btn-primary" type="button" onClick={() => changeStatus(distribution.distribution_id, 'delivered')}>Confirm delivered</button>}</div></article>)}</div>}
+  </section>;
+}
+
 export default function TeamDashboard() {
   const [activeTab, setActiveTab] = useState('register');
   const [form, setForm] = useState({ team_name: '', team_type: 'general' });
@@ -259,6 +284,7 @@ export default function TeamDashboard() {
         </svg>
       ),
     },
+    { id: 'distributions', label: 'Deliveries', icon: <span aria-hidden="true">→</span> },
   ];
 
   const tabNav = (
@@ -314,6 +340,7 @@ export default function TeamDashboard() {
           <MembershipsTab teams={teams} currentUserId={currentUserId} onDisband={disband} />
         )}
         {activeTab === 'disasters' && <DisasterList />}
+        {activeTab === 'distributions' && <DistributionTab />}
       </div>
     </DashboardShell>
   );

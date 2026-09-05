@@ -78,6 +78,7 @@ Never start coding before reading these files.
 - Item catalog CRUD with controlled categories and units
 - Victim registration, disaster linkage, shelter assignment, and capacity checks
 - Inventory listing with transactional Add stock and Remove stock operations
+- Independent shelter inventory with audited add/remove stock adjustments
 
 ### Donations
 
@@ -87,6 +88,13 @@ Never start coding before reading these files.
 - Donors can view their own donation history.
 - Admins can view all donations from the Donations dashboard tab.
 
+### Relief and Distribution
+
+- Admins can create, review, and track shelter relief requests.
+- Approved teams can receive warehouse-to-shelter distribution tasks.
+- Distribution assignment reserves warehouse stock transactionally.
+- Delivered distributions increase shelter inventory and update request progress.
+
 ### Locations
 
 - Automatically created during disaster registration
@@ -94,9 +102,11 @@ Never start coding before reading these files.
 
 ---
 
-# Remaining Modules
+# Remaining Work
 
-The remaining modules are relief requests, request items, and distributions.
+The core relief-request and distribution modules are implemented. Remaining work
+is focused on permission coverage, transaction tests, delivery history, and
+reporting improvements.
 
 See the Completed Modules, Remaining Modules, Business Rules, and Roadmap sections in this file for the implementation order and pattern. Follow the same architecture and conventions used by existing modules.
 
@@ -114,6 +124,7 @@ The schema contains:
 - warehouses
 - items
 - inventory
+- shelter_inventory
 - victims
 - donations
 - teams
@@ -442,7 +453,7 @@ express the requirement without changing its established appearance.
 The authoritative capability and endpoint-access matrix is maintained in this
 file (Detailed Specification, Role Permissions section).
 
-- ADMIN: disasters, team review/approval, donations, and operational management.
+- ADMIN: disasters, team review/approval, donations, inventory, relief requests, and distribution assignment.
 - TEAM: create and manage teams.
 - VOLUNTEER: join and view teams.
 - DONOR: submit donations and view personal donation history.
@@ -683,21 +694,22 @@ hiding frontend controls.
 
 ### Completed
 
-- Authentication, users, disasters, locations, teams, shelters, warehouses, items, victims, inventory, and donations.
+- Authentication, users, disasters, locations, teams, shelters, warehouses, items, victims, warehouse inventory, shelter inventory, donations, relief requests, and distributions.
 
 ### To Do
 
-1. Relief requests: shelter requests, request items, approvals, and quantity validation.
-2. Distributions: assign approved requests to warehouses and approved teams; decrement inventory transactionally.
+1. Add permission and transaction tests for relief requests, shelter inventory, and distributions.
+2. Add delivery history and reporting improvements.
 
 Dependencies and risks:
 
 - Shelters must exist before victims and relief requests can be assigned.
 - Warehouses and items must exist before inventory or donations.
-- Inventory must be correct before distributions can decrement stock.
+- Warehouse and shelter inventory must be correct before distributions can transfer stock.
 - Team approval should precede team assignment to a distribution.
 - Remaining workflow status values require consistent validation.
-- The supplied schema uses `users.full_name`, while current authentication SQL uses `users.name` and aliases it to `full_name`; resolve this mismatch before extending user features.
+- Donors contribute to warehouse inventory only. Relief requests are fulfilled from warehouse stock through approved team distributions.
+- The `users.full_name` mismatch is resolved in authentication, user, and team SQL; migration `005_ensure_users_full_name.sql` handles legacy databases.
 
 For every remaining module, implement the backend controller, route and
 middleware, frontend API functions, role-appropriate UI, permission tests, and

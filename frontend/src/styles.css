@@ -472,6 +472,29 @@ button {
   border-color: var(--accent);
 }
 
+.data-table input[type="number"],
+.data-table input[type="text"],
+.data-table .field-input {
+  width: 110px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: var(--font-body);
+}
+
+.data-table input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.data-table input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -686,6 +709,21 @@ button {
   transform: translateY(-1px);
 }
 
+/* Lift the containing card above following cards while its menu is open. */
+.info-card:has(.select-control--open),
+.module-card:has(.select-control--open) {
+  z-index: 50;
+}
+
+.info-card > *:has(.select-control--open),
+.module-card > *:has(.select-control--open) {
+  z-index: 100;
+}
+
+.select-control--open {
+  z-index: 60;
+}
+
 .select-value {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -730,7 +768,7 @@ button {
   list-style: none;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: rgba(20, 40, 44, 0.96);
+  background: var(--panel);
   box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.85);
   max-height: 240px;
   overflow-y: auto;
@@ -750,6 +788,7 @@ button {
   visibility: visible;
   transform: translateY(0) scale(1);
   pointer-events: auto;
+  z-index: 100;
 }
 
 /* thin scrollbar to match :root bg — select dropdown */
@@ -1624,6 +1663,57 @@ button {
   }
 }
 
+/* Relief Requests — compact professional table, no horizontal scroll */
+.relief-requests .section-heading h2 {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+.relief-table-wrap {
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  max-height: 52vh;
+}
+.relief-table {
+  width: 100%;
+  table-layout: fixed;
+  min-width: 0;
+}
+.relief-table th,
+.relief-table td {
+  padding: 11px 12px;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.relief-table th {
+  font-size: 10px;
+  padding: 10px 12px;
+}
+.relief-table td {
+  vertical-align: middle;
+}
+.relief-table .status-badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.relief-table .select-control--pill .select-trigger {
+  min-width: 120px;
+  max-width: 140px;
+}
+@media (max-width: 960px) {
+  .relief-table th,
+  .relief-table td {
+    padding: 9px 8px;
+    font-size: 12px;
+  }
+  .relief-table col:nth-child(1) { width: 56px !important; }
+  .relief-table col:nth-child(3) { width: 102px !important; }
+  .relief-table col:nth-child(5) { width: 96px !important; }
+  .relief-table col:nth-child(6) { width: 128px !important; }
+}
 @media (prefers-reduced-motion: reduce) {
   .tab-btn.active::after {
     animation: none;

@@ -25,44 +25,51 @@ CREATE TABLE disaster_locations (
   location_id INT REFERENCES locations (location_id) ON DELETE CASCADE,
   PRIMARY KEY (disaster_id, location_id)
 );
-CREATE TABLE shelters (
-  shelter_id SERIAL PRIMARY KEY,
-  name VARCHAR (100) NOT NULL,
-  address TEXT,
-  capacity INT NOT NULL CHECK (capacity > 0),
-  admin_id INT REFERENCES users (user_id),
-  location_id INT NOT NULL REFERENCES locations (location_id)
+ 
+CREATE TABLE shelters(
+    shelter_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    address TEXT,
+    capacity INT NOT NULL CHECK(capacity>0),
+    admin_id INT REFERENCES users(user_id),
+    location_id INT NOT NULL REFERENCES locations(location_id),
+    archived_at TIMESTAMP
 );
-CREATE TABLE warehouses (
-  warehouse_id SERIAL PRIMARY KEY,
-  name VARCHAR (100) NOT NULL,
-  admin_id INT REFERENCES users (user_id),
-  location_id INT NOT NULL REFERENCES locations (location_id)
+ 
+CREATE TABLE warehouses(
+    warehouse_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    admin_id INT REFERENCES users(user_id),
+    location_id INT NOT NULL REFERENCES locations(location_id),
+    archived_at TIMESTAMP
 );
-CREATE TABLE items (item_id SERIAL PRIMARY KEY, name VARCHAR (100) NOT NULL, category VARCHAR (50), unit VARCHAR (20) NOT NULL);
-CREATE TABLE inventory (
-  inventory_id SERIAL PRIMARY KEY,
-  warehouse_id INT NOT NULL REFERENCES warehouses (warehouse_id) ON DELETE CASCADE,
-  item_id INT NOT NULL REFERENCES items (item_id),
-  quantity INT NOT NULL DEFAULT 0 CHECK (quantity >= 0),
-  UNIQUE (warehouse_id, item_id)
+ 
+CREATE TABLE items(
+    item_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    category VARCHAR(50),
+    unit VARCHAR(20) NOT NULL,
+    archived_at TIMESTAMP
 );
-CREATE TABLE victims (
-  victim_id SERIAL PRIMARY KEY,
-  full_name VARCHAR (100) NOT NULL,
-  date_of_birth DATE,
-  gender VARCHAR (15),
-  priority_level VARCHAR (20),
-  status VARCHAR (20),
-  shelter_id INT REFERENCES shelters (shelter_id)
+ 
+CREATE TABLE inventory(
+    inventory_id SERIAL PRIMARY KEY,
+    warehouse_id INT NOT NULL REFERENCES warehouses(warehouse_id) ON DELETE CASCADE,
+    item_id INT NOT NULL REFERENCES items(item_id),
+    quantity INT NOT NULL DEFAULT 0 CHECK(quantity>=0),
+    archived_at TIMESTAMP,
+    UNIQUE(warehouse_id,item_id)
 );
-CREATE TABLE donations (
-  donation_id SERIAL PRIMARY KEY,
-  donor_id INT NOT NULL REFERENCES users (user_id),
-  warehouse_id INT NOT NULL REFERENCES warehouses (warehouse_id),
-  item_id INT NOT NULL REFERENCES items (item_id),
-  quantity INT NOT NULL CHECK (quantity > 0),
-  donated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+ 
+CREATE TABLE victims(
+    victim_id SERIAL PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    date_of_birth DATE,
+    gender VARCHAR(15),
+    priority_level VARCHAR(20),
+    status VARCHAR(20),
+    shelter_id INT REFERENCES shelters(shelter_id) ON DELETE CASCADE,
+    archived_at TIMESTAMP
 );
 CREATE TABLE teams (
   team_id SERIAL PRIMARY KEY,
@@ -86,19 +93,29 @@ CREATE TABLE relief_requests (
   status VARCHAR (20),
   requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE request_items (
-  request_item_id SERIAL PRIMARY KEY,
-  request_id INT NOT NULL REFERENCES relief_requests (request_id) ON DELETE CASCADE,
-  item_id INT NOT NULL REFERENCES items (item_id),
-  quantity_requested INT NOT NULL CHECK (quantity_requested > 0),
-  quantity_dispatched INT NOT NULL DEFAULT 0 CHECK (quantity_dispatched >= 0)
+ 
+CREATE TABLE relief_requests(
+    request_id SERIAL PRIMARY KEY,
+    shelter_id INT NOT NULL REFERENCES shelters(shelter_id) ON DELETE CASCADE,
+    requested_by_admin_id INT NOT NULL REFERENCES users(user_id),
+    status VARCHAR(20),
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE distributions (
-  distribution_id SERIAL PRIMARY KEY,
-  request_id INT NOT NULL REFERENCES relief_requests (request_id),
-  warehouse_id INT NOT NULL REFERENCES warehouses (warehouse_id),
-  assigned_team_id INT NOT NULL REFERENCES teams (team_id),
-  assigned_by_admin_id INT NOT NULL REFERENCES users (user_id),
-  status VARCHAR (20),
-  distributed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+ 
+CREATE TABLE request_items(
+    request_item_id SERIAL PRIMARY KEY,
+    request_id INT NOT NULL REFERENCES relief_requests(request_id) ON DELETE CASCADE,
+    item_id INT NOT NULL REFERENCES items(item_id),
+    quantity_requested INT NOT NULL CHECK(quantity_requested>0),
+    quantity_dispatched INT NOT NULL DEFAULT 0 CHECK(quantity_dispatched>=0)
+);
+ 
+CREATE TABLE distributions(
+    distribution_id SERIAL PRIMARY KEY,
+    request_id INT NOT NULL REFERENCES relief_requests(request_id) ON DELETE CASCADE,
+    warehouse_id INT NOT NULL REFERENCES warehouses(warehouse_id),
+    assigned_team_id INT NOT NULL REFERENCES teams(team_id),
+    assigned_by_admin_id INT NOT NULL REFERENCES users(user_id),
+    status VARCHAR(20),
+    distributed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -13,6 +13,7 @@ const LIST_WAREHOUSES = `SELECT
     l.location_id, l.division, l.district, l.upazila, l.union_name
   FROM warehouses w
   JOIN locations l ON l.location_id = w.location_id
+  WHERE w.archived_at IS NULL
   ORDER BY w.warehouse_id DESC`;
 
 const GET_WAREHOUSE = `SELECT
@@ -20,7 +21,7 @@ const GET_WAREHOUSE = `SELECT
     l.location_id, l.division, l.district, l.upazila, l.union_name
   FROM warehouses w
   JOIN locations l ON l.location_id = w.location_id
-  WHERE w.warehouse_id = $1`;
+  WHERE w.warehouse_id = $1 AND w.archived_at IS NULL`;
 
 const INSERT_WAREHOUSE = `INSERT INTO warehouses (name, admin_id, location_id)
   VALUES ($1, $2, $3)
@@ -28,11 +29,11 @@ const INSERT_WAREHOUSE = `INSERT INTO warehouses (name, admin_id, location_id)
 
 const UPDATE_WAREHOUSE = `UPDATE warehouses
   SET name = $1, location_id = $2
-  WHERE warehouse_id = $3
+  WHERE warehouse_id = $3 AND admin_id = $4 AND archived_at IS NULL
   RETURNING warehouse_id, name, admin_id, location_id`;
 
-const DELETE_WAREHOUSE = `DELETE FROM warehouses
-  WHERE warehouse_id = $1
+const DELETE_WAREHOUSE = `UPDATE warehouses SET archived_at = CURRENT_TIMESTAMP
+  WHERE warehouse_id = $1 AND admin_id = $2 AND archived_at IS NULL
   RETURNING warehouse_id`;
 
 module.exports = {

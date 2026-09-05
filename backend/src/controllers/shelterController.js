@@ -108,6 +108,7 @@ async function updateShelter(req, res) {
       input.capacity,
       locationId,
       req.params.id,
+      req.user.user_id,
     ]);
     if (!result.rows[0]) {
       await client.query('ROLLBACK');
@@ -126,13 +127,11 @@ async function updateShelter(req, res) {
 
 async function deleteShelter(req, res) {
   try {
-    const result = await pool.query(DELETE_SHELTER, [req.params.id]);
+    const result = await pool.query(DELETE_SHELTER, [req.params.id, req.user.user_id]);
     if (!result.rows[0]) return res.status(404).json({ message: 'Shelter not found' });
-    return res.json({ message: 'Shelter deleted' });
+    return res.json({ message: 'Shelter archived' });
   } catch (err) {
-    if (err.code === '23503') {
-      return res.status(409).json({ message: 'Shelter cannot be deleted while victims or requests reference it' });
-    }
+    if (err.code === '23503') return res.status(409).json({ message: 'Shelter cannot be deleted because another record references it' });
     console.error('[shelters/delete] error:', err);
     return res.status(500).json({ message: 'Failed to delete shelter' });
   }

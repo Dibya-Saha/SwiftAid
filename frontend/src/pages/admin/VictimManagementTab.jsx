@@ -68,12 +68,12 @@ export default function VictimManagementTab() {
   }
 
   async function removeVictim(id) {
-    if (!window.confirm('Delete this victim record?')) return;
+    if (!window.confirm('Archive this victim record? Its history will be preserved.')) return;
     setMessage('');
     try {
       const result = await deleteVictim(id);
       setIsError(false);
-      setMessage(result.message || 'Victim deleted successfully.');
+      setMessage(result.message || 'Victim archived successfully.');
       if (editingId === id) resetForm();
       await refresh();
     } catch (err) {
@@ -106,7 +106,7 @@ export default function VictimManagementTab() {
       </div>
       <section className="module-section">
         <div className="section-heading"><div><div className="eyebrow">Victim registry</div><h2>Affected people</h2></div><span className="count-badge">{victims.length} total</span></div>
-        {!victims.length ? <div className="empty-state">No victim records have been registered yet.</div> : <div className="table-wrap"><table className="data-table"><thead><tr><th>Victim</th><th>Disaster</th><th>Shelter</th><th>Priority</th><th>Status</th><th>Actions</th></tr></thead><tbody>{victims.map((victim) => <tr key={victim.victim_id}><td><strong>{victim.full_name}</strong><small>#{victim.victim_id}</small></td><td>{victim.disaster_title}</td><td>{victim.shelter_name || 'Unassigned'}</td><td>{victim.priority_level}</td><td><span className={`status-badge status-${victim.status}`}>{victim.status}</span></td><td><div className="button-row"><button className="btn-ghost" onClick={() => startEdit(victim)}>Edit</button><button className="btn-danger" onClick={() => removeVictim(victim.victim_id)}>Delete</button></div></td></tr>)}</tbody></table></div>}
+        {!victims.length ? <div className="empty-state">No victim records have been registered yet.</div> : <div className="table-wrap"><table className="data-table"><thead><tr><th>Victim</th><th>Disaster</th><th>Shelter</th><th>Priority</th><th>Status</th><th>Actions</th></tr></thead><tbody>{victims.map((victim) => <tr key={victim.victim_id}><td><strong>{victim.full_name}</strong><small>#{victim.victim_id}</small></td><td>{victim.disaster_title}</td><td>{victim.shelter_name || 'Unassigned'}</td><td>{victim.priority_level}</td><td><span className={`status-badge status-${victim.status}`}>{victim.status}</span></td><td><div className="button-row"><button className="btn-ghost" onClick={() => startEdit(victim)}>Edit</button><button className="btn-danger" onClick={() => removeVictim(victim.victim_id)}>Archive</button></div></td></tr>)}</tbody></table></div>}
       </section>
     </>
   );

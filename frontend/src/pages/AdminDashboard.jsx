@@ -7,7 +7,10 @@ import WarehouseManagementTab from "./admin/WarehouseManagementTab";
 import ItemManagementTab from "./admin/ItemManagementTab";
 import VictimManagementTab from "./admin/VictimManagementTab";
 import InventoryManagementTab from "./admin/InventoryManagementTab";
+import ShelterInventoryTab from "./admin/ShelterInventoryTab";
 import DonationManagementTab from "./admin/DonationManagementTab";
+import ReliefRequestManagementTab from "./admin/ReliefRequestManagementTab";
+import DistributionManagementTab from "./admin/DistributionManagementTab";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("disaster");
@@ -127,8 +130,18 @@ export default function AdminDashboard() {
       ),
     },
     {
+      id: "shelterInventory",
+      label: "Shelter Stock",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      ),
+    },
+    {
       id: "inventory",
-      label: "Inventory",
+      label: "Warehouse Inventory",
       icon: (
         <svg
           viewBox="0 0 24 24"
@@ -162,6 +175,35 @@ export default function AdminDashboard() {
           <path d="M12 22V7" />
           <path d="M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7Z" />
           <path d="M12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7Z" />
+        </svg>
+      ),
+    },
+    {
+      id: "relief",
+      label: "Relief Requests",
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+      ),
+    },
+    {
+      id: "distribution",
+      label: "Distributions",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 12h18" /><path d="m13 6 6 6-6 6" /><path d="M3 6v12" />
         </svg>
       ),
     },
@@ -210,7 +252,10 @@ export default function AdminDashboard() {
         {activeTab === "item" && <ItemManagementTab />}
         {activeTab === "victim" && <VictimManagementTab />}
         {activeTab === "inventory" && <InventoryManagementTab />}
+        {activeTab === "shelterInventory" && <ShelterInventoryTab />}
         {activeTab === "donation" && <DonationManagementTab />}
+        {activeTab === "relief" && <ReliefRequestManagementTab />}
+        {activeTab === "distribution" && <DistributionManagementTab />}
       </div>
     </DashboardShell>
   );

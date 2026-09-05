@@ -13,6 +13,7 @@ const LIST_SHELTERS = `SELECT
     l.location_id, l.division, l.district, l.upazila, l.union_name
   FROM shelters s
   JOIN locations l ON l.location_id = s.location_id
+  WHERE s.archived_at IS NULL
   ORDER BY s.shelter_id DESC`;
 
 const GET_SHELTER = `SELECT
@@ -20,7 +21,7 @@ const GET_SHELTER = `SELECT
     l.location_id, l.division, l.district, l.upazila, l.union_name
   FROM shelters s
   JOIN locations l ON l.location_id = s.location_id
-  WHERE s.shelter_id = $1`;
+  WHERE s.shelter_id = $1 AND s.archived_at IS NULL`;
 
 const INSERT_SHELTER = `INSERT INTO shelters (name, address, capacity, admin_id, location_id)
   VALUES ($1, $2, $3, $4, $5)
@@ -28,11 +29,11 @@ const INSERT_SHELTER = `INSERT INTO shelters (name, address, capacity, admin_id,
 
 const UPDATE_SHELTER = `UPDATE shelters
   SET name = $1, address = $2, capacity = $3, location_id = $4
-  WHERE shelter_id = $5
+  WHERE shelter_id = $5 AND admin_id = $6 AND archived_at IS NULL
   RETURNING shelter_id, name, address, capacity, admin_id, location_id`;
 
-const DELETE_SHELTER = `DELETE FROM shelters
-  WHERE shelter_id = $1
+const DELETE_SHELTER = `UPDATE shelters SET archived_at = CURRENT_TIMESTAMP
+  WHERE shelter_id = $1 AND admin_id = $2 AND archived_at IS NULL
   RETURNING shelter_id`;
 
 module.exports = {

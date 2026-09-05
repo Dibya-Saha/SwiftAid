@@ -86,7 +86,7 @@ async function updateWarehouse(req, res) {
   try {
     await client.query('BEGIN');
     const locationId = await resolveLocation(client, input);
-    const result = await client.query(UPDATE_WAREHOUSE, [input.name, locationId, req.params.id]);
+    const result = await client.query(UPDATE_WAREHOUSE, [input.name, locationId, req.params.id, req.user.user_id]);
     if (!result.rows[0]) {
       await client.query('ROLLBACK');
       return res.status(404).json({ message: 'Warehouse not found' });
@@ -104,12 +104,12 @@ async function updateWarehouse(req, res) {
 
 async function deleteWarehouse(req, res) {
   try {
-    const result = await pool.query(DELETE_WAREHOUSE, [req.params.id]);
+    const result = await pool.query(DELETE_WAREHOUSE, [req.params.id, req.user.user_id]);
     if (!result.rows[0]) return res.status(404).json({ message: 'Warehouse not found' });
-    return res.json({ message: 'Warehouse deleted' });
+    return res.json({ message: 'Warehouse archived' });
   } catch (err) {
     if (err.code === '23503') {
-      return res.status(409).json({ message: 'Warehouse cannot be deleted while inventory, donations, or distributions reference it' });
+      return res.status(409).json({ message: 'Warehouse cannot be archived because another record references it' });
     }
     console.error('[warehouses/delete] error:', err);
     return res.status(500).json({ message: 'Failed to delete warehouse' });

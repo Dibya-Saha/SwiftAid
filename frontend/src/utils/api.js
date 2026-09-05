@@ -125,3 +125,31 @@ export const fetchMyDonations = () => request('/donations/mine');
 export const fetchDonations = () => request('/donations');
 
 export const fetchDonation = (id) => request(`/donations/${id}`);
+
+export const createReliefRequest = (payload) =>
+  request('/relief-requests', { method: 'POST', body: JSON.stringify(payload) });
+
+export const fetchReliefRequests = () => request('/relief-requests');
+
+export const fetchReliefRequest = (id) => request(`/relief-requests/${id}`);
+
+export const updateReliefRequestStatus = (id, status) =>
+  request(`/relief-requests/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+
+export const updateReliefRequestItem = (requestId, itemId, quantityDispatched) =>
+  request(`/relief-requests/${requestId}/items/${itemId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ quantity_dispatched: quantityDispatched }),
+  });
+
+export const fetchShelterInventory = () => request('/shelter-inventory');
+export const fetchShelterInventoryByShelter = (shelterId) => request(`/shelter-inventory/${shelterId}`);
+export const adjustShelterInventory = (payload) =>
+  request('/shelter-inventory/adjust', { method: 'POST', body: JSON.stringify(payload) });
+
+export const createDistribution = (payload) =>
+  request('/distributions', { method: 'POST', body: JSON.stringify(payload) });
+export const fetchDistributions = () => request('/distributions');
+export const fetchMyDistributions = () => request('/distributions/mine');
+export const updateDistributionStatus = (id, status) =>
+  request(`/distributions/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });

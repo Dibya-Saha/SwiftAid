@@ -137,6 +137,25 @@ Categories are `food`, `water`, `medical`, `hygiene`, `clothing`, `shelter`,
 Admins use positive Add stock and Remove stock operations. Removal cannot make
 quantity negative.
 
+## `shelter_inventory`
+
+**Purpose:** Tracks supplies currently held by each shelter independently from
+warehouse stock.
+
+| Column | Type | Constraints |
+|---|---|---|
+| `shelter_inventory_id` | `SERIAL` / integer | Primary key |
+| `shelter_id` | `INT` | Required foreign key to `shelters.shelter_id`, cascade delete |
+| `item_id` | `INT` | Required foreign key to `items.item_id` |
+| `quantity` | `INT` | Required, default `0`, non-negative |
+| `minimum_quantity` | `INT` | Required, default `0`, non-negative low-stock threshold |
+| `updated_at` | `TIMESTAMP` | Last stock update time |
+
+**Unique constraint:** (`shelter_id`, `item_id`).
+
+**Example usage:** Warehouse distributions increase shelter stock; approved
+administrative adjustments record consumption or corrections.
+
 ## `victims`
 
 **Purpose:** Stores people affected by disasters and optionally assigned to shelters.
@@ -253,10 +272,24 @@ quantity negative.
 | `assigned_by_admin_id` | `INT` | Required foreign key to `users.user_id` |
 | `status` | `VARCHAR(20)` | Nullable |
 | `distributed_at` | `TIMESTAMP` | Defaults to `CURRENT_TIMESTAMP` |
+| `picked_up_at` | `TIMESTAMP` | Nullable pickup time |
+| `delivered_at` | `TIMESTAMP` | Nullable delivery completion time |
 
 **Relationships:** Connects a relief request, warehouse, response team, and assigning admin.
 
 **Example usage:** An admin assigns an approved request to a team for dispatch from a warehouse.
+
+## `distribution_items`
+
+**Purpose:** Stores the item quantities assigned in each warehouse-to-shelter distribution.
+
+| Column | Type | Constraints |
+|---|---|---|
+| `distribution_item_id` | `SERIAL` / integer | Primary key |
+| `distribution_id` | `INT` | Required foreign key to `distributions.distribution_id`, cascade delete |
+| `request_item_id` | `INT` | Required foreign key to `request_items.request_item_id` |
+| `item_id` | `INT` | Required foreign key to `items.item_id` |
+| `quantity` | `INT` | Required, greater than zero |
 
 ## Relationship Summary
 
@@ -277,7 +310,9 @@ quantity negative.
 - Deleting a warehouse cascades to its `inventory` rows.
 - Deleting a team cascades to its `team_members` rows.
 - Deleting a user cascades to their `team_members` rows.
-- Deleting a relief request cascades to its `request_items` rows.
+- Deleting a shelter cascades to its victims, shelter inventory, relief
+  requests, distributions, and legacy shelter donations.
+- Deleting a relief request cascades to its `request_items` and distributions.
 
 ## Application Rules and Migrations
 
@@ -290,6 +325,11 @@ quantity negative.
   `bottle`, `can`, `set`, `pair`, and `tablet`.
 - Inventory uses one unique row per `(warehouse_id, item_id)` and cannot have
   a negative quantity.
+- Donors contribute to warehouse `inventory` only. Shelter stock is stored
+  separately in `shelter_inventory` and is updated through deliveries or
+  approved administrative adjustments.
+- Items, shelters, warehouses, victims, and inventory records use `archived_at`
+  for removal from active operations while preserving historical records.
 - Team review explanations are stored in `teams.review_remark`.
 
 Run migrations in numeric order after the base schema:
@@ -298,3 +338,9 @@ Run migrations in numeric order after the base schema:
 2. `002_team_review_remark.sql`
 3. `003_victim_disaster_relationship.sql`
 4. `004_victim_status_values.sql`
+5. `005_ensure_users_full_name.sql`
+6. `006_shelter_inventory_and_relief_donation.sql` — creates independent shelter inventory
+7. `007_shelter_inventory_movements.sql` — adds low-stock thresholds and adjustment history
+8. `008_distributions.sql` — adds item-level warehouse-to-shelter distribution records
+9. `009_shelter_delete_cascade.sql` — allows shelter deletion to cascade through dependent operational records
+10. `010_archive_records.sql` — preserves operational records when removed from active use
