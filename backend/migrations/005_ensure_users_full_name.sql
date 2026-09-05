@@ -22,3 +22,5 @@ BEGIN
         ALTER TABLE users DROP COLUMN name;
     END IF;
 END $$;
+
+--no need to run this migration solved
