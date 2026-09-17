@@ -1,18 +1,21 @@
 import { useEffect, useState } from 'react';
-import { fetchShelters, createShelter, updateShelter, deleteShelter } from '../../utils/api';
+import { fetchShelters, fetchWarehouses, createShelter, updateShelter, deleteShelter } from '../../utils/api';
 import { EMPTY_SHELTER } from './adminConstants';
 import LocationPicker from '../../components/LocationPicker';
+import FacilityOverviewMap from '../../components/FacilityOverviewMap';
 
 export default function ShelterManagementTab() {
   const [form, setForm] = useState(EMPTY_SHELTER);
   const [shelters, setShelters] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
   async function refreshShelters() {
-    const { shelters: rows } = await fetchShelters();
-    setShelters(rows);
+    const [{ shelters: shelterRows }, { warehouses: warehouseRows }] = await Promise.all([fetchShelters(), fetchWarehouses()]);
+    setShelters(shelterRows || []);
+    setWarehouses(warehouseRows || []);
   }
 
   useEffect(() => {
@@ -105,6 +108,8 @@ export default function ShelterManagementTab() {
           </div>
         </form>
       </div>
+
+      <FacilityOverviewMap shelters={shelters} warehouses={warehouses} />
 
       <section className="module-section">
         <div className="section-heading">
