@@ -909,6 +909,50 @@ button {
   font-size: 13px;
 }
 
+.location-picker {
+  margin: 8px 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.location-picker__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+}
+
+.location-picker__toolbar > div {
+  min-width: 0;
+}
+
+.location-picker__toolbar small {
+  display: block;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.location-picker__map {
+  border-top: 1px solid var(--border);
+}
+
+.location-picker__map .leaflet-container {
+  height: 300px;
+  width: 100%;
+  background: var(--panel-alt);
+}
+
+.location-picker__hint {
+  display: block;
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .select-control--pill .select-trigger {
   width: auto;
   min-width: 120px;

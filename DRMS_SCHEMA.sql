@@ -33,7 +33,9 @@ CREATE TABLE shelters(
     capacity INT NOT NULL CHECK(capacity>0),
     admin_id INT REFERENCES users(user_id),
     location_id INT NOT NULL REFERENCES locations(location_id),
-    archived_at TIMESTAMP
+    archived_at TIMESTAMP,
+    latitude NUMERIC(9,6),
+    longitude NUMERIC(9,6)
 );
  
 CREATE TABLE warehouses(
@@ -41,7 +43,9 @@ CREATE TABLE warehouses(
     name VARCHAR(100) NOT NULL,
     admin_id INT REFERENCES users(user_id),
     location_id INT NOT NULL REFERENCES locations(location_id),
-    archived_at TIMESTAMP
+    archived_at TIMESTAMP,
+    latitude NUMERIC(9,6),
+    longitude NUMERIC(9,6)
 );
  
 CREATE TABLE items(

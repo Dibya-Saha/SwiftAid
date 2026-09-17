@@ -10,7 +10,8 @@ const INSERT_LOCATION = `INSERT INTO locations (division, district, upazila, uni
 
 const LIST_SHELTERS = `SELECT
     s.shelter_id, s.name, s.address, s.capacity, s.admin_id,
-    l.location_id, l.division, l.district, l.upazila, l.union_name
+    l.location_id, l.division, l.district, l.upazila, l.union_name,
+    s.latitude, s.longitude
   FROM shelters s
   JOIN locations l ON l.location_id = s.location_id
   WHERE s.archived_at IS NULL
@@ -18,19 +19,20 @@ const LIST_SHELTERS = `SELECT
 
 const GET_SHELTER = `SELECT
     s.shelter_id, s.name, s.address, s.capacity, s.admin_id,
-    l.location_id, l.division, l.district, l.upazila, l.union_name
+    l.location_id, l.division, l.district, l.upazila, l.union_name,
+    s.latitude, s.longitude
   FROM shelters s
   JOIN locations l ON l.location_id = s.location_id
   WHERE s.shelter_id = $1 AND s.archived_at IS NULL`;
 
-const INSERT_SHELTER = `INSERT INTO shelters (name, address, capacity, admin_id, location_id)
-  VALUES ($1, $2, $3, $4, $5)
-  RETURNING shelter_id, name, address, capacity, admin_id, location_id`;
+const INSERT_SHELTER = `INSERT INTO shelters (name, address, capacity, admin_id, location_id, latitude, longitude)
+  VALUES ($1, $2, $3, $4, $5, $6, $7)
+  RETURNING shelter_id, name, address, capacity, admin_id, location_id, latitude, longitude`;
 
 const UPDATE_SHELTER = `UPDATE shelters
-  SET name = $1, address = $2, capacity = $3, location_id = $4
-  WHERE shelter_id = $5 AND admin_id = $6 AND archived_at IS NULL
-  RETURNING shelter_id, name, address, capacity, admin_id, location_id`;
+  SET name = $1, address = $2, capacity = $3, location_id = $4, latitude = $5, longitude = $6
+  WHERE shelter_id = $7 AND admin_id = $8 AND archived_at IS NULL
+  RETURNING shelter_id, name, address, capacity, admin_id, location_id, latitude, longitude`;
 
 const DELETE_SHELTER = `UPDATE shelters SET archived_at = CURRENT_TIMESTAMP
   WHERE shelter_id = $1 AND admin_id = $2 AND archived_at IS NULL

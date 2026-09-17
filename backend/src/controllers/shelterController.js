@@ -19,6 +19,8 @@ function readShelterInput(body) {
     district: typeof district === 'string' ? district.trim() : '',
     upazila: typeof upazila === 'string' ? upazila.trim() : '',
     unionName: typeof (unionName || union_name) === 'string' ? (unionName || union_name).trim() : '',
+    latitude: body.latitude === '' || body.latitude === undefined ? null : Number(body.latitude),
+    longitude: body.longitude === '' || body.longitude === undefined ? null : Number(body.longitude),
   };
 }
 
@@ -28,6 +30,9 @@ function validateShelterInput(input) {
   }
   if (!Number.isInteger(input.capacity) || input.capacity <= 0) {
     return 'Capacity must be a positive integer';
+  }
+  if ((input.latitude === null) !== (input.longitude === null) || !Number.isFinite(input.latitude) || !Number.isFinite(input.longitude) || input.latitude < -90 || input.latitude > 90 || input.longitude < -180 || input.longitude > 180) {
+    return 'Latitude and longitude must be valid coordinates provided together';
   }
   return null;
 }
@@ -81,6 +86,8 @@ async function createShelter(req, res) {
       input.capacity,
       req.user.user_id,
       locationId,
+      input.latitude,
+      input.longitude,
     ]);
     await client.query('COMMIT');
     return res.status(201).json({ shelter: { ...result.rows[0], location_id: locationId } });
@@ -107,6 +114,8 @@ async function updateShelter(req, res) {
       input.address || null,
       input.capacity,
       locationId,
+      input.latitude,
+      input.longitude,
       req.params.id,
       req.user.user_id,
     ]);

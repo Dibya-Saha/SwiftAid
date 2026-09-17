@@ -17,12 +17,17 @@ function readWarehouseInput(body) {
     district: typeof district === 'string' ? district.trim() : '',
     upazila: typeof upazila === 'string' ? upazila.trim() : '',
     unionName: typeof (unionName || union_name) === 'string' ? (unionName || union_name).trim() : '',
+    latitude: body.latitude === '' || body.latitude === undefined ? null : Number(body.latitude),
+    longitude: body.longitude === '' || body.longitude === undefined ? null : Number(body.longitude),
   };
 }
 
 function validateWarehouseInput(input) {
   if (!input.name || !input.division || !input.district) {
     return 'Name, division, and district are required';
+  }
+  if ((input.latitude === null) !== (input.longitude === null) || !Number.isFinite(input.latitude) || !Number.isFinite(input.longitude) || input.latitude < -90 || input.latitude > 90 || input.longitude < -180 || input.longitude > 180) {
+    return 'Latitude and longitude must be valid coordinates provided together';
   }
   return null;
 }
@@ -65,7 +70,7 @@ async function createWarehouse(req, res) {
   try {
     await client.query('BEGIN');
     const locationId = await resolveLocation(client, input);
-    const result = await client.query(INSERT_WAREHOUSE, [input.name, req.user.user_id, locationId]);
+    const result = await client.query(INSERT_WAREHOUSE, [input.name, req.user.user_id, locationId, input.latitude, input.longitude]);
     await client.query('COMMIT');
     return res.status(201).json({ warehouse: { ...result.rows[0], location_id: locationId } });
   } catch (err) {
@@ -86,7 +91,7 @@ async function updateWarehouse(req, res) {
   try {
     await client.query('BEGIN');
     const locationId = await resolveLocation(client, input);
-    const result = await client.query(UPDATE_WAREHOUSE, [input.name, locationId, req.params.id, req.user.user_id]);
+    const result = await client.query(UPDATE_WAREHOUSE, [input.name, locationId, input.latitude, input.longitude, req.params.id, req.user.user_id]);
     if (!result.rows[0]) {
       await client.query('ROLLBACK');
       return res.status(404).json({ message: 'Warehouse not found' });

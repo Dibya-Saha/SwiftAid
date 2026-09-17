@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchShelters, createShelter, updateShelter, deleteShelter } from '../../utils/api';
 import { EMPTY_SHELTER } from './adminConstants';
+import LocationPicker from '../../components/LocationPicker';
 
 export default function ShelterManagementTab() {
   const [form, setForm] = useState(EMPTY_SHELTER);
@@ -35,6 +36,8 @@ export default function ShelterManagementTab() {
       district: shelter.district || '',
       upazila: shelter.upazila || '',
       union: shelter.union_name || '',
+      latitude: shelter.latitude ?? '',
+      longitude: shelter.longitude ?? '',
     });
     setMessage('');
   }
@@ -84,6 +87,7 @@ export default function ShelterManagementTab() {
             <div className="field"><label>Shelter name</label><input required value={form.name} onChange={updateField('name')} placeholder="North Valley Shelter" /></div>
             <div className="field"><label>Capacity</label><input required type="number" min="1" value={form.capacity} onChange={updateField('capacity')} placeholder="250" /></div>
           </div>
+          <LocationPicker latitude={form.latitude} longitude={form.longitude} onChange={(coordinates) => setForm((current) => ({ ...current, ...coordinates }))} />
           <div className="field"><label>Address</label><input value={form.address} onChange={updateField('address')} placeholder="Shelter address" /></div>
           <div className="form-grid">
             <div className="field"><label>Division</label><input required value={form.division} onChange={updateField('division')} placeholder="Sylhet" /></div>

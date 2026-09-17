@@ -330,6 +330,9 @@ administrative adjustments record consumption or corrections.
   approved administrative adjustments.
 - Items, shelters, warehouses, victims, and inventory records use `archived_at`
   for removal from active operations while preserving historical records.
+- Shelters and warehouses store optional `latitude` and `longitude` coordinates
+  selected from the map. These coordinates are kept on each facility because
+  multiple facilities can share the same administrative location.
 - Team review explanations are stored in `teams.review_remark`.
 
 Run migrations in numeric order after the base schema:
@@ -344,3 +347,4 @@ Run migrations in numeric order after the base schema:
 8. `008_distributions.sql` — adds item-level warehouse-to-shelter distribution records
 9. `009_shelter_delete_cascade.sql` — allows shelter deletion to cascade through dependent operational records
 10. `010_archive_records.sql` — preserves operational records when removed from active use
+11. `011_facility_coordinates.sql` — adds validated map coordinates to shelters and warehouses
