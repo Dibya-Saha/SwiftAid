@@ -26,6 +26,10 @@ export default function ShelterManagementTab() {
     return (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
   }
 
+  function handleAutoFill(filled) {
+    setForm((current) => ({ ...current, ...filled }));
+  }
+
   function startEdit(shelter) {
     setEditingId(shelter.shelter_id);
     setForm({
@@ -87,7 +91,7 @@ export default function ShelterManagementTab() {
             <div className="field"><label>Shelter name</label><input required value={form.name} onChange={updateField('name')} placeholder="North Valley Shelter" /></div>
             <div className="field"><label>Capacity</label><input required type="number" min="1" value={form.capacity} onChange={updateField('capacity')} placeholder="250" /></div>
           </div>
-          <LocationPicker latitude={form.latitude} longitude={form.longitude} onChange={(coordinates) => setForm((current) => ({ ...current, ...coordinates }))} />
+          <LocationPicker latitude={form.latitude} longitude={form.longitude} onChange={(coordinates) => setForm((current) => ({ ...current, ...coordinates }))} onAutoFill={handleAutoFill} />
           <div className="field"><label>Address</label><input value={form.address} onChange={updateField('address')} placeholder="Shelter address" /></div>
           <div className="form-grid">
             <div className="field"><label>Division</label><input required value={form.division} onChange={updateField('division')} placeholder="Sylhet" /></div>

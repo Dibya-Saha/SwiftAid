@@ -14,6 +14,7 @@ const donationRoutes = require('./routes/donationRoutes');
 const reliefRequestRoutes = require('./routes/reliefRequestRoutes');
 const shelterInventoryRoutes = require('./routes/shelterInventoryRoutes');
 const distributionRoutes = require('./routes/distributionRoutes');
+const geocodeRoutes = require('./routes/geocodeRoutes');
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use('/api/donations', donationRoutes);
 app.use('/api/relief-requests', reliefRequestRoutes);
 app.use('/api/shelter-inventory', shelterInventoryRoutes);
 app.use('/api/distributions', distributionRoutes);
+app.use('/api/geocode', geocodeRoutes);
 
 // Fallback 404
 app.use((req, res) => {

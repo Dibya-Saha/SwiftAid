@@ -153,3 +153,8 @@ export const fetchDistributions = () => request('/distributions');
 export const fetchMyDistributions = () => request('/distributions/mine');
 export const updateDistributionStatus = (id, status) =>
   request(`/distributions/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+
+export const reverseGeocode = (latitude, longitude) => {
+  const params = new URLSearchParams({ lat: String(latitude), lon: String(longitude) });
+  return request(`/geocode/reverse?${params.toString()}`);
+};

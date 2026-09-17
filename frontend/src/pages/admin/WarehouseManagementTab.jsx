@@ -26,6 +26,11 @@ export default function WarehouseManagementTab() {
     return (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
   }
 
+  function handleAutoFill(filled) {
+    const { address, ...locationFields } = filled;
+    setForm((current) => ({ ...current, ...locationFields }));
+  }
+
   function startEdit(warehouse) {
     setEditingId(warehouse.warehouse_id);
     setForm({
@@ -88,7 +93,7 @@ export default function WarehouseManagementTab() {
             <div className="field"><label>Upazila</label><input value={form.upazila} onChange={updateField('upazila')} /></div>
             <div className="field"><label>Union</label><input value={form.union} onChange={updateField('union')} /></div>
           </div>
-          <LocationPicker latitude={form.latitude} longitude={form.longitude} onChange={(coordinates) => setForm((current) => ({ ...current, ...coordinates }))} />
+          <LocationPicker latitude={form.latitude} longitude={form.longitude} onChange={(coordinates) => setForm((current) => ({ ...current, ...coordinates }))} onAutoFill={handleAutoFill} />
           <div className="button-row">
             <button type="submit" className="btn-primary">{editingId ? 'Update warehouse' : 'Create warehouse'}</button>
             {editingId && <button type="button" className="btn-ghost" onClick={resetForm}>Cancel</button>}
