@@ -4,7 +4,7 @@ import { MapContainer, Marker, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 
-const DEFAULT_CENTER = [23.685, 90.3563];
+const BANGLADESH_CENTER = [23.685, 90.3563];
 
 function toPoint(row, kind, idKey) {
   const lat = Number(row?.latitude);
@@ -37,7 +37,7 @@ function FitBounds({ points }) {
 
   useEffect(() => {
     if (!points.length) {
-      map.setView(DEFAULT_CENTER, 7);
+      map.setView(BANGLADESH_CENTER, 7);
       return;
     }
     if (points.length === 1) {
@@ -45,10 +45,27 @@ function FitBounds({ points }) {
       return;
     }
     const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng]));
-    map.fitBounds(bounds.pad(0.2));
+    map.fitBounds(bounds.pad(0.2), { maxZoom: 15 });
   }, [map, points.map((p) => p.id).join('|')]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return null;
+}
+
+function ResetBangladeshView() {
+  const map = useMap();
+  return (
+    <button
+      type="button"
+      className="map-reset-btn"
+      title="Reset view to Bangladesh"
+      onClick={(event) => {
+        event.stopPropagation();
+        map.setView(BANGLADESH_CENTER, 7);
+      }}
+    >
+      Reset to Bangladesh
+    </button>
+  );
 }
 
 function HeatLayer({ points }) {
@@ -105,38 +122,44 @@ export default function FacilityOverviewMap({ shelters = [], warehouses = [] }) 
           <span className="count-badge">{warehouseCount} warehouses</span>
         </div>
       </div>
-      {points.length ? (
-        <>
-          <div className="facility-overview__map">
-            <MapContainer center={DEFAULT_CENTER} zoom={7} scrollWheelZoom={false}>
-              <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <FitBounds points={points} />
-              <HeatLayer points={points} />
-              {points.map((point, index) => (
-                <Marker
-                  key={point.id}
-                  position={[point.lat, point.lng]}
-                  icon={facilityIcon(point.kind, Math.min(index, 30) * 35)}
-                  keyboard={false}
-                  bubblingMouseEvents={false}
-                >
-                  <Tooltip direction="top" offset={[0, -12]} opacity={1} sticky>
-                    <strong>{point.name}</strong>
-                    <small>{point.kind === 'shelter' ? 'Shelter' : 'Warehouse'}</small>
-                  </Tooltip>
-                </Marker>
-              ))}
-            </MapContainer>
-          </div>
-          <div className="facility-overview__footer">
-            <span className="facility-legend"><span className="legend-dot legend-dot--shelter legend-dot--blink" />Shelter</span>
-            <span className="facility-legend"><span className="legend-dot legend-dot--warehouse" />Warehouse</span>
-            <small>{points.length} of {total} facilities have coordinates{total - points.length > 0 ? ' — others are list-only' : ''}. Hover a marker for its name.</small>
-          </div>
-        </>
-      ) : (
-        <div className="empty-state">No mapped facilities yet. Pick a location on the map while registering a shelter or warehouse.</div>
-      )}
+      <div className="facility-overview__map">
+        <MapContainer
+          center={BANGLADESH_CENTER}
+          zoom={7}
+          scrollWheelZoom
+          minZoom={2}
+          maxZoom={19}
+          worldCopyJump
+        >
+          <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <FitBounds points={points} />
+          <HeatLayer points={points} />
+          <ResetBangladeshView />
+          {points.map((point, index) => (
+            <Marker
+              key={point.id}
+              position={[point.lat, point.lng]}
+              icon={facilityIcon(point.kind, Math.min(index, 30) * 35)}
+              keyboard={false}
+              bubblingMouseEvents={false}
+            >
+              <Tooltip direction="top" offset={[0, -12]} opacity={1} sticky>
+                <strong>{point.name}</strong>
+                <small>{point.kind === 'shelter' ? 'Shelter' : 'Warehouse'}</small>
+              </Tooltip>
+            </Marker>
+          ))}
+        </MapContainer>
+      </div>
+      <div className="facility-overview__footer">
+        <span className="facility-legend"><span className="legend-dot legend-dot--shelter legend-dot--blink" />Shelter</span>
+        <span className="facility-legend"><span className="legend-dot legend-dot--warehouse" />Warehouse</span>
+        {points.length ? (
+          <small>{points.length} of {total} facilities have coordinates{total - points.length > 0 ? ' — others are list-only' : ''}. Hover a marker for its name. Scroll to zoom • drag to pan.</small>
+        ) : (
+          <small>No mapped facilities yet — showing Bangladesh. Pick a location while registering. Scroll to zoom • drag to pan.</small>
+        )}
+      </div>
     </section>
   );
 }

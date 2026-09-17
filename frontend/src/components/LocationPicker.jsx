@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react';
-import { CircleMarker, MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
+import { CircleMarker, MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { reverseGeocode } from '../utils/api';
 import { pickAdminFields } from '../utils/reverseGeocode';
 
-const DEFAULT_CENTER = [23.685, 90.3563];
+const BANGLADESH_CENTER = [23.685, 90.3563];
 
 function LocationMarker({ position, onSelect }) {
   useMapEvents({
@@ -17,6 +17,23 @@ function LocationMarker({ position, onSelect }) {
   });
 
   return position ? <CircleMarker center={position} radius={9} pathOptions={{ color: '#f2b705', fillColor: '#f2b705', fillOpacity: 0.75 }} /> : null;
+}
+
+function ResetBangladeshView() {
+  const map = useMap();
+  return (
+    <button
+      type="button"
+      className="map-reset-btn"
+      title="Reset view to Bangladesh"
+      onClick={(event) => {
+        event.stopPropagation();
+        map.setView(BANGLADESH_CENTER, 7);
+      }}
+    >
+      Reset to Bangladesh
+    </button>
+  );
 }
 
 export default function LocationPicker({ latitude, longitude, onChange, onAutoFill }) {
@@ -65,9 +82,17 @@ export default function LocationPicker({ latitude, longitude, onChange, onAutoFi
       </div>
       {open && (
         <div className="location-picker__map">
-          <MapContainer center={position || DEFAULT_CENTER} zoom={position ? 15 : 7} scrollWheelZoom>
+          <MapContainer
+            center={position || BANGLADESH_CENTER}
+            zoom={position ? 15 : 7}
+            scrollWheelZoom
+            minZoom={2}
+            maxZoom={19}
+            worldCopyJump
+          >
             <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             <LocationMarker position={position} onSelect={handleSelect} />
+            <ResetBangladeshView />
           </MapContainer>
           <small className="location-picker__hint">Click the map to place the facility marker{onAutoFill ? ' — district / upazila will be filled automatically.' : '.'}{geocoding ? ' Looking up…' : ''}</small>
           {geoStatus.text && <div className={geoStatus.type === 'success' ? 'success-banner' : geoStatus.type === 'error' ? 'error-banner' : 'empty-state'} style={{ margin: '8px 12px 12px' }}>{geoStatus.text}</div>}

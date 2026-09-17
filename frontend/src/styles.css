@@ -987,6 +987,43 @@ button {
   background: var(--panel-alt);
 }
 
+.location-picker__map .leaflet-bar a,
+.facility-overview__map .leaflet-bar a {
+  background: var(--panel-alt);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.location-picker__map .leaflet-bar a:hover,
+.facility-overview__map .leaflet-bar a:hover {
+  background: var(--panel);
+  color: var(--accent);
+}
+
+.location-picker__map,
+.facility-overview__map {
+  position: relative;
+}
+
+.map-reset-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 600;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-alt);
+  color: var(--text);
+  font-size: 11px;
+  padding: 6px 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.map-reset-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .facility-overview__footer {
   display: flex;
   align-items: center;
