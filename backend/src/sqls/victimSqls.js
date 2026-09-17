@@ -20,7 +20,7 @@ const LIST_VICTIMS = `SELECT
       ELSE 'available'
     END AS shelter_availability
   FROM victims v
-  JOIN disasters d ON d.disaster_id = v.disaster_id
+  LEFT JOIN disasters d ON d.disaster_id = v.disaster_id
   LEFT JOIN shelters s ON s.shelter_id = v.shelter_id
   WHERE v.archived_at IS NULL
   ORDER BY v.victim_id DESC`;
@@ -38,11 +38,11 @@ const GET_VICTIM = `SELECT
       ELSE 'available'
     END AS shelter_availability
   FROM victims v
-  JOIN disasters d ON d.disaster_id = v.disaster_id
+  LEFT JOIN disasters d ON d.disaster_id = v.disaster_id
   LEFT JOIN shelters s ON s.shelter_id = v.shelter_id
   WHERE v.victim_id = $1 AND v.archived_at IS NULL`;
 
-const FIND_DISASTER = `SELECT disaster_id FROM disasters WHERE disaster_id = $1`;
+const FIND_DISASTER = `SELECT disaster_id FROM disasters WHERE disaster_id = $1 AND archived_at IS NULL`;
 const LOCK_SHELTER = `SELECT shelter_id, capacity FROM shelters WHERE shelter_id = $1 AND archived_at IS NULL FOR UPDATE`;
 const COUNT_SHELTER_VICTIMS = `SELECT COUNT(*)::int AS occupied
   FROM victims

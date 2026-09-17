@@ -71,15 +71,9 @@ export default function LocationPicker({ latitude, longitude, onChange, onAutoFi
 
   return (
     <div className="location-picker">
-      <div className="location-picker__toolbar">
-        <div>
-          <span className="field-label">Map location</span>
-          <small>{position ? `${position[0].toFixed(6)}, ${position[1].toFixed(6)}` : 'No coordinates selected'}</small>
-        </div>
-        <button type="button" className="btn-secondary compact" onClick={() => setOpen((value) => !value)}>
-          {open ? 'Close map' : position ? 'Change on map' : 'Pick on map'}
-        </button>
-      </div>
+      <button type="button" className="btn-secondary compact location-picker__btn" onClick={() => setOpen((value) => !value)}>
+        {open ? 'Close map' : position ? 'Change on map' : 'Pick on map'}
+      </button>
       {open && (
         <div className="location-picker__map">
           <MapContainer

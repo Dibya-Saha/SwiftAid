@@ -328,11 +328,12 @@ administrative adjustments record consumption or corrections.
 - Donors contribute to warehouse `inventory` only. Shelter stock is stored
   separately in `shelter_inventory` and is updated through deliveries or
   approved administrative adjustments.
-- Items, shelters, warehouses, victims, and inventory records use `archived_at`
-  for removal from active operations while preserving historical records.
-- Shelters and warehouses store optional `latitude` and `longitude` coordinates
-  selected from the map. These coordinates are kept on each facility because
-  multiple facilities can share the same administrative location.
+- Items, shelters, warehouses, victims, inventory records, and disasters use
+  `archived_at` for removal from active operations while preserving historical
+  records. Archived disasters stay linked to their victims, which remain listed.
+- Shelters, warehouses, and disasters store optional `latitude` and `longitude`
+  coordinates selected from the map. Facility coordinates are kept on each
+  record because multiple facilities can share the same administrative location.
 - Team review explanations are stored in `teams.review_remark`.
 
 Run migrations in numeric order after the base schema:
@@ -348,3 +349,5 @@ Run migrations in numeric order after the base schema:
 9. `009_shelter_delete_cascade.sql` — allows shelter deletion to cascade through dependent operational records
 10. `010_archive_records.sql` — preserves operational records when removed from active use
 11. `011_facility_coordinates.sql` — adds validated map coordinates to shelters and warehouses
+12. `012_disaster_coordinates.sql` — adds validated map coordinates to disasters
+13. `013_disaster_archive.sql` — archives disasters via `archived_at`, preserving victim history

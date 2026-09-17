@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Select from './Select';
-import { fetchDisasters, updateDisasterStatus } from '../utils/api';
+import { deleteDisaster, fetchDisasters, updateDisasterStatus } from '../utils/api';
 
 const STATUSES = ['ACTIVE', 'CLOSED'];
 
@@ -36,6 +36,20 @@ export default function DisasterList({ canEdit = false, refreshKey = 0 }) {
     }
   }
 
+  async function archive(id) {
+    if (!window.confirm('Archive this disaster? It will be hidden from future operations while its history is preserved.')) return;
+    setUpdating(id);
+    setError('');
+    try {
+      await deleteDisaster(id);
+      setDisasters((rows) => rows.filter((row) => row.disaster_id !== id));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUpdating(null);
+    }
+  }
+
   return (
     <section className="module-section">
       <div className="section-heading">
@@ -52,7 +66,7 @@ export default function DisasterList({ canEdit = false, refreshKey = 0 }) {
         <div className="table-wrap">
           <table className="data-table">
             <thead>
-              <tr><th>Incident</th><th>Location</th><th>Started</th><th>Status</th></tr>
+              <tr><th>Incident</th><th>Location</th><th>Started</th><th>Status</th>{canEdit && <th>Actions</th>}</tr>
             </thead>
             <tbody>
               {disasters.map((disaster) => (
@@ -71,6 +85,11 @@ export default function DisasterList({ canEdit = false, refreshKey = 0 }) {
                       />
                     ) : <span className={`status-badge status-${String(disaster.status).toLowerCase()}`}>{disaster.status}</span>}
                   </td>
+                  {canEdit && (
+                    <td>
+                      <button className="btn-danger" disabled={updating === disaster.disaster_id} onClick={() => archive(disaster.disaster_id)}>Archive</button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

@@ -6,14 +6,20 @@ const {
   INSERT_DISASTER_LOCATION,
   LIST_DISASTERS,
   UPDATE_DISASTER_STATUS,
+  DELETE_DISASTER,
 } = require('../sqls/disasterSqls');
 
 // POST /api/disasters
 async function createDisaster(req, res) {
     const { title, division, district, upazila, union: unionName, union_name } = req.body;
+    const latitude = req.body.latitude === '' || req.body.latitude === undefined ? null : Number(req.body.latitude);
+    const longitude = req.body.longitude === '' || req.body.longitude === undefined ? null : Number(req.body.longitude);
     try {
         if (!title || !division || !district) {
             return res.status(400).json({ message: 'Title, division, and district are required' });
+        }
+        if ((latitude === null) !== (longitude === null) || (latitude !== null && (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180))) {
+            return res.status(400).json({ message: 'Latitude and longitude must be valid coordinates provided together' });
         }
 
         const client = await pool.connect();
@@ -32,7 +38,7 @@ async function createDisaster(req, res) {
 
             const disasterResult = await client.query(
                 INSERT_DISASTER,
-                [title, req.user.user_id]
+                [title, req.user.user_id, latitude, longitude]
             );
             const disaster = disasterResult.rows[0];
 
@@ -86,4 +92,16 @@ async function updateDisasterStatus(req, res) {
     }
 }
 
-module.exports = { createDisaster, listDisasters, updateDisasterStatus };
+// DELETE /api/disasters/:id (archive)
+async function archiveDisaster(req, res) {
+    try {
+        const result = await pool.query(DELETE_DISASTER, [req.params.id]);
+        if (!result.rows[0]) return res.status(404).json({ message: 'Disaster not found' });
+        return res.json({ message: 'Disaster archived' });
+    } catch (err) {
+        console.error('[disasters/archive] error:', err);
+        return res.status(500).json({ message: 'Failed to archive disaster' });
+    }
+}
+
+module.exports = { createDisaster, listDisasters, updateDisasterStatus, archiveDisaster };

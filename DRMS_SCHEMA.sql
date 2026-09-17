@@ -18,7 +18,10 @@ CREATE TABLE disasters (
   title VARCHAR (150) NOT NULL,
   status VARCHAR (30) CHECK (status IN ('ACTIVE', 'ONGOING', 'RESOLVED', 'CLOSED')),
   start_date DATE NOT NULL,
-  created_by_admin_id INT NOT NULL REFERENCES users (user_id)
+  created_by_admin_id INT NOT NULL REFERENCES users (user_id),
+  latitude NUMERIC(9,6),
+  longitude NUMERIC(9,6),
+  archived_at TIMESTAMP
 );
 CREATE TABLE disaster_locations (
   disaster_id INT REFERENCES disasters (disaster_id) ON DELETE CASCADE,

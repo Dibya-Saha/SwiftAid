@@ -42,6 +42,9 @@ export const fetchDisasters = () => request('/disasters');
 export const updateDisasterStatus = (id, status) =>
   request(`/disasters/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
 
+export const deleteDisaster = (id) =>
+  request(`/disasters/${id}`, { method: 'DELETE' });
+
 export const fetchShelters = () => request('/shelters');
 
 export const createShelter = (payload) =>

@@ -20,15 +20,16 @@ function toPoint(row, kind, idKey) {
 }
 
 function facilityIcon(kind, delay) {
-  const rings =
-    kind === 'shelter'
-      ? `<span class="facility-dot__ping" style="animation-delay:${delay}ms"></span><span class="facility-dot__ping ping--delayed" style="animation-delay:${delay + 900}ms"></span>`
-      : `<span class="facility-dot__halo"></span>`;
   return L.divIcon({
     className: 'facility-dot-wrap',
-    html: `<div class="facility-dot facility-dot--${kind}" style="animation-delay:${delay}ms">${rings}<span class="facility-dot__core"></span></div>`,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
+    html: `<div class="facility-dot facility-dot--${kind}" style="--pin-delay:${delay}ms">
+      <span class="facility-dot__ripple"></span>
+      <span class="facility-dot__ripple facility-dot__ripple--late"></span>
+      <span class="facility-dot__glow"></span>
+      <span class="facility-dot__core"><span class="facility-dot__spark"></span></span>
+    </div>`,
+    iconSize: [64, 64],
+    iconAnchor: [32, 32],
   });
 }
 
@@ -143,7 +144,7 @@ export default function FacilityOverviewMap({ shelters = [], warehouses = [] }) 
               keyboard={false}
               bubblingMouseEvents={false}
             >
-              <Tooltip direction="top" offset={[0, -12]} opacity={1} sticky>
+              <Tooltip direction="top" offset={[0, -22]} opacity={1} sticky>
                 <strong>{point.name}</strong>
                 <small>{point.kind === 'shelter' ? 'Shelter' : 'Warehouse'}</small>
               </Tooltip>

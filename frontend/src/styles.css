@@ -911,33 +911,17 @@ button {
 
 .location-picker {
   margin: 8px 0 16px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--panel);
-  overflow: hidden;
 }
 
-.location-picker__toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px;
-}
-
-.location-picker__toolbar > div {
-  min-width: 0;
-}
-
-.location-picker__toolbar small {
-  display: block;
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 11px;
+.location-picker__btn {
+  width: 100%;
 }
 
 .location-picker__map {
-  border-top: 1px solid var(--border);
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 .location-picker__map .leaflet-container {
@@ -1072,60 +1056,112 @@ button {
 .legend-dot--warehouse {
   background: #45c4b0;
   box-shadow: 0 0 8px rgba(69, 196, 176, 0.8);
+  animation: legendBlinkTeal 1.8s ease-in-out infinite;
 }
 
-.facility-dot-wrap {
-  background: transparent;
-  border: none;
+@keyframes legendBlinkTeal {
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(69, 196, 176, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(69, 196, 176, 1);
+  }
+}
+
+.facility-dot-wrap,
+.leaflet-marker-icon.facility-dot-wrap {
+  background: transparent !important;
+  border: none !important;
+  overflow: visible;
 }
 
 .facility-dot {
+  --pin-delay: 0ms;
   position: relative;
-  width: 22px;
-  height: 22px;
+  width: 64px;
+  height: 64px;
   opacity: 0;
-  transform: scale(0.3);
-  animation: facilityDotIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+  animation: facilityDotIn 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.15) forwards;
+  animation-delay: var(--pin-delay);
 }
 
+.facility-dot__ripple,
+.facility-dot__glow,
 .facility-dot__core {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 10px;
-  height: 10px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.9);
   transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.facility-dot__ripple {
+  width: 18px;
+  height: 18px;
+  opacity: 0;
+  animation: facilityRipple 2.2s cubic-bezier(0.12, 0.65, 0.2, 1) infinite;
+  animation-delay: var(--pin-delay);
+}
+
+.facility-dot__ripple--late {
+  animation-delay: calc(var(--pin-delay) + 1.05s);
+}
+
+.facility-dot--shelter .facility-dot__ripple {
+  border: 2px solid rgba(255, 214, 64, 0.95);
+  box-shadow: 0 0 16px rgba(242, 183, 5, 0.7);
+}
+
+.facility-dot--warehouse .facility-dot__ripple {
+  border: 2px solid rgba(110, 240, 220, 0.95);
+  box-shadow: 0 0 16px rgba(69, 196, 176, 0.7);
+}
+
+.facility-dot__glow {
+  width: 28px;
+  height: 28px;
+  animation: facilityGlow 1.7s ease-in-out infinite;
+  animation-delay: var(--pin-delay);
+}
+
+.facility-dot--shelter .facility-dot__glow {
+  background: radial-gradient(circle, rgba(242, 183, 5, 0.55) 0%, rgba(242, 183, 5, 0) 72%);
+}
+
+.facility-dot--warehouse .facility-dot__glow {
+  background: radial-gradient(circle, rgba(69, 196, 176, 0.5) 0%, rgba(69, 196, 176, 0) 72%);
+}
+
+.facility-dot__core {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  animation: facilityCore 1.8s ease-in-out infinite;
+  animation-delay: var(--pin-delay);
 }
 
 .facility-dot--shelter .facility-dot__core {
-  background: var(--accent);
-  box-shadow: 0 0 10px rgba(242, 183, 5, 0.9);
+  background: radial-gradient(circle at 32% 28%, #ffe38a 0%, var(--accent) 58%, #c48a00 100%);
+  box-shadow: 0 0 10px rgba(242, 183, 5, 0.95), 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 .facility-dot--warehouse .facility-dot__core {
-  background: #45c4b0;
-  box-shadow: 0 0 10px rgba(69, 196, 176, 0.9);
+  background: radial-gradient(circle at 32% 28%, #b8fff4 0%, #45c4b0 58%, #1f8a7c 100%);
+  box-shadow: 0 0 10px rgba(69, 196, 176, 0.95), 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
-.facility-dot__ping {
+.facility-dot__spark {
   position: absolute;
-  inset: 0;
+  top: 2px;
+  left: 3px;
+  width: 4px;
+  height: 3px;
   border-radius: 50%;
-  opacity: 0;
-}
-
-.facility-dot--shelter .facility-dot__ping {
-  border: 2px solid var(--accent);
-  animation: facilityBlink 1.8s ease-out infinite both;
-}
-
-.facility-dot--warehouse .facility-dot__halo {
-  position: absolute;
-  inset: 2px;
-  border-radius: 50%;
-  border: 1px solid rgba(69, 196, 176, 0.55);
+  background: rgba(255, 255, 255, 0.85);
+  animation: facilitySpark 1.8s ease-in-out infinite;
+  animation-delay: var(--pin-delay);
 }
 
 .facility-overview .leaflet-tooltip {
@@ -1156,23 +1192,75 @@ button {
 }
 
 @keyframes facilityDotIn {
+  from {
+    opacity: 0;
+    transform: scale(0.35);
+  }
   to {
     opacity: 1;
     transform: scale(1);
   }
 }
 
-@keyframes facilityBlink {
+@keyframes facilityRipple {
   0% {
-    transform: scale(0.4);
-    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(0.7);
+    opacity: 0.95;
   }
-  70% {
-    opacity: 0.35;
+  65% {
+    opacity: 0.28;
   }
   100% {
-    transform: scale(1.5);
+    transform: translate(-50%, -50%) scale(3.6);
     opacity: 0;
+  }
+}
+
+@keyframes facilityGlow {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.85);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.35);
+    opacity: 1;
+  }
+}
+
+@keyframes facilityCore {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.14);
+  }
+}
+
+@keyframes facilitySpark {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .facility-dot,
+  .facility-dot__ripple,
+  .facility-dot__glow,
+  .facility-dot__core,
+  .facility-dot__spark,
+  .legend-dot--blink,
+  .legend-dot--warehouse {
+    animation: none !important;
+  }
+
+  .facility-dot {
+    opacity: 1;
   }
 }
 
