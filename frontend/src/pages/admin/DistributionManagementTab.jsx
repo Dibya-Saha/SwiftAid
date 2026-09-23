@@ -62,8 +62,9 @@ export default function DistributionManagementTab() {
       const init = {};
       for (const item of request.items || []) {
         const remaining = item.remaining ?? item.quantity_requested - item.quantity_dispatched;
-        const stock = warehouseId ? (stockByWarehouseItem.get(`${warehouseId}:${item.item_id}`) || 0) : remaining;
-        const max = Math.min(remaining, stock);
+        const available = Math.max(remaining - (Number(item.assigned_active) || 0), 0);
+        const stock = warehouseId ? (stockByWarehouseItem.get(`${warehouseId}:${item.item_id}`) || 0) : available;
+        const max = Math.min(available, stock);
         init[item.request_item_id] = String(max > 0 ? max : '');
       }
       setQuantities(init);
@@ -75,10 +76,11 @@ export default function DistributionManagementTab() {
     const next = {};
     for (const item of detail.items) {
       const remaining = item.remaining ?? item.quantity_requested - item.quantity_dispatched;
+      const available = Math.max(remaining - (Number(item.assigned_active) || 0), 0);
       const stock = warehouseId ? (stockByWarehouseItem.get(`${warehouseId}:${item.item_id}`) || 0) : 0;
-      const max = warehouseId ? Math.min(remaining, stock) : remaining;
+      const max = warehouseId ? Math.min(available, stock) : available;
       const current = Number(quantities[item.request_item_id]);
-      if (!warehouseId) next[item.request_item_id] = String(remaining);
+      if (!warehouseId) next[item.request_item_id] = String(available);
       else if (!Number.isFinite(current) || current <= 0) next[item.request_item_id] = String(max > 0 ? max : '');
       else next[item.request_item_id] = String(Math.min(current, max) || '');
     }
@@ -93,11 +95,13 @@ export default function DistributionManagementTab() {
     if (!warehouseId) { setError('Select a warehouse to see available stock before assigning.'); return; }
     const items = (detail?.items || []).map((item) => {
       const remaining = item.remaining ?? item.quantity_requested - item.quantity_dispatched;
+      const assigned = Number(item.assigned_active) || 0;
+      const available = Math.max(remaining - assigned, 0);
       const stock = warehouseStockForDetail.get(item.request_item_id) ?? 0;
-      const max = Math.min(remaining, stock);
+      const max = Math.min(available, stock);
       const qty = Number(quantities[item.request_item_id]);
       if (!Number.isFinite(qty) || qty <= 0) return null;
-      if (qty > max) return { error: `${item.item_name}: transfer ${qty} exceeds min(remaining ${remaining}, warehouse stock ${stock})` };
+      if (qty > max) return { error: `${item.item_name}: transfer ${qty} exceeds min(unassigned ${available}, warehouse stock ${stock})` };
       return { request_item_id: item.request_item_id, quantity: qty };
     }).filter(Boolean);
     const validationError = items.find((it) => it.error);
@@ -153,13 +157,15 @@ export default function DistributionManagementTab() {
           <label className="field"><span className="field-label">Approved team</span><Select value={teamId} onChange={(e) => setTeamId(e.target.value)} placeholder="Select team" options={teams.map((t) => ({ value: String(t.team_id), label: t.team_name }))} required /></label>
         </div>
         {hasNoStockForDetail && detail && <div className="error-banner">No warehouse has stock for the items in this request. Restock warehouse inventory before assigning.</div>}
-        {detail && <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Remaining = requested − dispatched (still needed at shelter). Warehouse stock = available in selected warehouse. Max transfer = min(Remaining, Warehouse stock).</div>}
+        {detail && <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Remaining = requested − dispatched (still needed at shelter). Already assigned to teams counts against it. Max transfer = min(Remaining − Assigned, Warehouse stock).</div>}
         {detail && <div className="table-wrap"><table className="data-table"><thead><tr><th>Item</th><th>Needed<br /><small style={{ fontWeight: 400, textTransform: 'none' }}>requested − dispatched</small></th><th>Available in warehouse</th><th>Transfer quantity</th></tr></thead><tbody>{detail.items.map((item) => {
           const remaining = item.remaining ?? item.quantity_requested - item.quantity_dispatched;
+          const assigned = Number(item.assigned_active) || 0;
+          const available = Math.max(remaining - assigned, 0);
           const stock = warehouseId ? (warehouseStockForDetail.get(item.request_item_id) ?? 0) : null;
-          const max = stock !== null ? Math.min(remaining, stock) : remaining;
-          const insufficient = stock !== null && stock < remaining;
-          return <tr key={item.request_item_id}><td>{item.item_name} <small>{item.unit} • requested {item.quantity_requested}</small></td><td><strong>{remaining}</strong><small>needed</small></td><td>{stock === null ? '— select warehouse' : stock}{insufficient && stock !== null && <small style={{ display: 'block', color: stock === 0 ? 'var(--danger, #e55353)' : 'var(--warning, #e5a253)' }}>{stock === 0 ? 'Out of stock in this warehouse' : `Limited to ${stock} (shortage)`}</small>}</td><td><input type="number" min="0" max={max} value={quantities[item.request_item_id] || ''} onChange={(e) => setQuantities((prev) => ({ ...prev, [item.request_item_id]: e.target.value }))} disabled={!warehouseId || max === 0} placeholder={!warehouseId ? 'Select warehouse first' : max === 0 ? 'No stock' : `max ${max}`} style={{ width: '110px', background: 'var(--panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 10px', borderRadius: 4, fontSize: 13, fontFamily: 'var(--font-body)' }} /></td></tr>;
+          const max = stock !== null ? Math.min(available, stock) : available;
+          const insufficient = stock !== null && stock < available;
+          return <tr key={item.request_item_id}><td>{item.item_name} <small>{item.unit} • requested {item.quantity_requested}</small></td><td><strong>{remaining}</strong><small>needed{assigned > 0 ? ` • ${assigned} already assigned` : ''}</small></td><td>{stock === null ? '— select warehouse' : stock}{insufficient && stock !== null && <span className="error-banner error-banner--inline">{stock === 0 ? 'Out of stock in this warehouse' : `Limited to ${stock} (shortage)`}</span>}</td><td><input type="number" min="0" max={max} value={quantities[item.request_item_id] || ''} onChange={(e) => setQuantities((prev) => ({ ...prev, [item.request_item_id]: e.target.value }))} disabled={!warehouseId || max === 0} placeholder={!warehouseId ? 'Select warehouse first' : max === 0 ? 'No stock' : `max ${max}`} style={{ width: '110px', background: 'var(--panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 10px', borderRadius: 4, fontSize: 13, fontFamily: 'var(--font-body)' }} /></td></tr>;
         })}</tbody></table></div>}
         <button className="btn-primary" type="submit" disabled={saving || (detail && (!warehouseId || hasNoStockForDetail))}>{saving ? 'Assigning...' : 'Assign distribution'}</button>
       </form>

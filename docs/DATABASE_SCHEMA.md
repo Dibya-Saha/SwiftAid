@@ -342,7 +342,7 @@ administrative adjustments record consumption or corrections.
 
 ## Database Features (Triggers, Functions, Procedures, Complex Queries)
 
-All three objects are grouped for inspection in
+All database objects are grouped for inspection in
 `backend/src/sqls/database-objects/` (see its `README.md`).
 
 - **Trigger:** `trg_inventory_audit` (`014`, inspectable in
@@ -355,12 +355,12 @@ All three objects are grouped for inspection in
   `backend/src/sqls/database-objects/shelterCapacitySqls.js`) returns remaining
   beds as `capacity − active victims`. It is called inside `LIST_SHELTERS` /
   `GET_SHELTER` and powers the victim-registration shelter dropdown.
-- **Procedure:** reverted — distribution assignment runs again as a
-  Node-managed transaction in `createDistribution`
-  (`backend/src/controllers/distributionController.js`), which performs the
-  multi-step workflow (request/team validation, per-item stock reservation,
-  distribution + item inserts, request approval) with `BEGIN`/`COMMIT`/
-  `ROLLBACK`. No stored procedure is currently deployed.
+- **Procedure:** `set_dispatched(...)` (`017`, inspectable in
+  `backend/src/sqls/database-objects/dispatchUpdateProcedureSqls.js`) sets a
+  request item's dispatched quantity and advances the request to
+  `partially_fulfilled`/`fulfilled` atomically across `request_items` and
+  `relief_requests`. Called by `updateDispatchedQuantity` in
+  `reliefRequestController.js` whenever dispatched quantities are saved.
 - **Complex queries (multi-table and/or aggregation):** `LIST_RELIEF_REQUESTS`
   (joins + `SUM`/`COUNT`/`json_agg` item summaries), `LIST_DISTRIBUTIONS`
   (four-table join + `json_agg` items), and `LIST_VICTIMS` (correlated
@@ -386,3 +386,4 @@ Run migrations in numeric order after the base schema:
 15. `015_fix_inventory_audit_action_types.sql` — allows `ARCHIVE` audit events on existing databases
 16. `016_shelter_capacity_function.sql` — adds `shelter_remaining_capacity()` computed function
 17. `017_remove_pending_request_status.sql` — folds stranded `pending` relief requests into `waiting_stock`
+18. `018_set_dispatched_procedure.sql` — adds `set_dispatched()` atomic dispatch-update procedure

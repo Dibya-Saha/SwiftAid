@@ -45,6 +45,13 @@ async function createDistribution(req, res) {
       return res.status(400).json({ message: "Team is not approved" });
     }
 
+    // Quantities already promised to other teams but not yet delivered or
+    // cancelled still count against the request until they land or release.
+    const assignedRes = await client.query(sql.GET_ASSIGNED_FOR_REQUEST, [requestId]);
+    const assignedByItem = new Map(
+      assignedRes.rows.map((row) => [row.request_item_id, Number(row.assigned_active) || 0]),
+    );
+
     const items = [];
     for (const raw of rawItems) {
       const requestItemId = integer(raw.request_item_id);
@@ -69,12 +76,14 @@ async function createDistribution(req, res) {
       const remaining =
         requestItem.rows[0].quantity_requested -
         requestItem.rows[0].quantity_dispatched;
-      if (quantity > remaining) {
+      const assigned = assignedByItem.get(requestItemId) || 0;
+      const available = Math.max(remaining - assigned, 0);
+      if (quantity > available) {
         await client.query("ROLLBACK");
         return res
           .status(400)
           .json({
-            message: "Distribution exceeds the remaining requested quantity",
+            message: `Distribution exceeds the unassigned remaining quantity (${assigned} already assigned)`,
           });
       }
       const stock = await client.query(sql.RESERVE_WAREHOUSE_STOCK, [

@@ -8,6 +8,13 @@ const FIND_REQUEST_ITEM = `SELECT request_item_id, request_id, item_id,
     quantity_requested, quantity_dispatched
   FROM request_items WHERE request_item_id = $1 AND request_id = $2 FOR UPDATE`;
 
+const GET_ASSIGNED_FOR_REQUEST = `SELECT di.request_item_id,
+    COALESCE(SUM(di.quantity), 0)::int AS assigned_active
+  FROM distribution_items di
+  JOIN distributions d ON d.distribution_id = di.distribution_id
+  WHERE d.request_id = $1 AND d.status NOT IN ('delivered', 'cancelled')
+  GROUP BY di.request_item_id`;
+
 const RESERVE_WAREHOUSE_STOCK = `UPDATE inventory
   SET quantity = quantity - $3
   WHERE warehouse_id = $1 AND item_id = $2 AND archived_at IS NULL AND quantity >= $3
@@ -142,7 +149,7 @@ const PARTIALLY_FULFILL_REQUEST = `UPDATE relief_requests SET status = 'partiall
   RETURNING request_id, status`;
 
 module.exports = {
-  FIND_REQUEST, FIND_TEAM, FIND_REQUEST_ITEM, RESERVE_WAREHOUSE_STOCK,
+  FIND_REQUEST, FIND_TEAM, FIND_REQUEST_ITEM, GET_ASSIGNED_FOR_REQUEST, RESERVE_WAREHOUSE_STOCK,
   RETURN_WAREHOUSE_STOCK, CREATE_DISTRIBUTION, CREATE_DISTRIBUTION_ITEM,
   LIST_DISTRIBUTIONS, LIST_TEAM_DISTRIBUTIONS, GET_DISTRIBUTION,
   GET_DISTRIBUTION_ITEMS, LOCK_DISTRIBUTION, UPDATE_DISTRIBUTION_STATUS,

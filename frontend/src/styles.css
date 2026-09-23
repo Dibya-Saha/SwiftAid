@@ -630,6 +630,14 @@ button {
   margin-bottom: 16px;
 }
 
+/* Compact error banner for inline use inside table cells. */
+.error-banner--inline {
+  display: inline-block;
+  padding: 3px 8px;
+  margin: 6px 0 0;
+  font-size: 11px;
+}
+
 /* Cards & Containers */
 .info-card,
 .module-card,

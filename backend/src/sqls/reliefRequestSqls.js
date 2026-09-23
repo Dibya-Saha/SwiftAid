@@ -20,6 +20,7 @@ const LIST_RELIEF_REQUESTS = `SELECT
   FROM relief_requests rr
   JOIN shelters s ON s.shelter_id = rr.shelter_id AND s.archived_at IS NULL
   JOIN users u ON u.user_id = rr.requested_by_admin_id
+  WHERE LOWER(rr.status) <> 'rejected'
   ORDER BY rr.requested_at DESC, rr.request_id DESC`;
 
 const GET_RELIEF_REQUEST = `SELECT
@@ -33,7 +34,13 @@ const GET_RELIEF_REQUEST = `SELECT
 
 const GET_REQUEST_ITEMS = `SELECT
     ri.request_item_id, ri.request_id, ri.item_id, ri.quantity_requested, ri.quantity_dispatched,
-    i.name AS item_name, i.category, i.unit
+    i.name AS item_name, i.category, i.unit,
+    COALESCE((
+      SELECT SUM(di.quantity) FROM distribution_items di
+      JOIN distributions d ON d.distribution_id = di.distribution_id
+      WHERE di.request_item_id = ri.request_item_id
+        AND d.status NOT IN ('delivered', 'cancelled')
+    ), 0)::int AS assigned_active
   FROM request_items ri
   JOIN items i ON i.item_id = ri.item_id
   WHERE ri.request_id = $1

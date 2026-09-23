@@ -22,6 +22,7 @@ const {
   CREATE_DONATION_FOR_REQUEST,
   UPSERT_SHELTER_INVENTORY_TX,
 } = require('../sqls/reliefRequestSqls');
+const procedureSql = require('../sqls/database-objects/dispatchUpdateProcedureSqls');
 
 const ALLOWED_STATUSES = ['waiting_stock', 'approved', 'partially_fulfilled', 'rejected', 'fulfilled'];
 
@@ -318,22 +319,17 @@ async function updateDispatchedQuantity(req, res) {
     }
     if (!requestItem.rows[0]) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Request item not found' }); }
 
-    const item = requestItem.rows[0];
-    if (quantityDispatched > item.quantity_requested) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ message: 'quantity_dispatched must not exceed quantity_requested' });
-    }
-
-    const result = await client.query(UPDATE_DISPATCHED, [item.request_item_id, requestId, quantityDispatched]);
-    const allItems = await client.query(LOCK_REQUEST_ITEMS_ALL, [requestId]);
-    const allFulfilled = allItems.rows.every((r) => r.quantity_dispatched >= r.quantity_requested);
-    const someDispatched = allItems.rows.some((r) => r.quantity_dispatched > 0);
-    if (allFulfilled) await client.query(UPDATE_REQUEST_STATUS, [requestId, 'fulfilled']);
-    else if (someDispatched) await client.query(UPDATE_REQUEST_STATUS, [requestId, 'partially_fulfilled']);
+    // Setting the dispatched quantity and advancing the request status runs
+    // atomically inside the database procedure.
+    await client.query(procedureSql.CALL_SET_DISPATCHED, [requestId, requestItem.rows[0].request_item_id, quantityDispatched]);
+    const result = await client.query(procedureSql.GET_UPDATED_ITEM, [requestItem.rows[0].request_item_id, requestId]);
     await client.query('COMMIT');
     return res.json({ request_item: result.rows[0], item: result.rows[0] });
   } catch (err) {
     await client.query('ROLLBACK');
+    const message = String(err.message || '');
+    if (message.includes('REQUEST_ITEM_NOT_FOUND')) return res.status(404).json({ message: 'Request item not found' });
+    if (message.includes('EXCEEDS_REQUESTED')) return res.status(400).json({ message: 'quantity_dispatched must not exceed quantity_requested' });
     console.error('[reliefRequests/updateDispatched] error:', err);
     return res.status(500).json({ message: 'Failed to update dispatched quantity' });
   } finally { client.release(); }
