@@ -880,7 +880,7 @@ button {
   list-style: none;
   border: 1px solid var(--glass-border);
   border-radius: var(--glass-r-md);
-  background: var(--glass-bg-heavy);
+  background: rgba(20, 40, 44, 0.96);
   box-shadow:
     inset 0 1px 0 var(--glass-highlight),
     0 18px 40px -20px rgba(0, 0, 0, 0.85);
@@ -897,6 +897,12 @@ button {
     opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
     visibility 0.24s ease;
+}
+
+@supports (background: color-mix(in oklab, white 10%, transparent)) {
+  .select-menu {
+    background: color-mix(in oklab, var(--panel) 94%, transparent);
+  }
 }
 
 .select-menu--open {
