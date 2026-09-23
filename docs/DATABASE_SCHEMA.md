@@ -331,10 +331,41 @@ administrative adjustments record consumption or corrections.
 - Items, shelters, warehouses, victims, inventory records, and disasters use
   `archived_at` for removal from active operations while preserving historical
   records. Archived disasters stay linked to their victims, which remain listed.
+- Archiving a shelter auto-rejects its open relief requests
+  (`waiting_stock`/`approved`/`partially_fulfilled`) in the same
+  transaction, and request lists exclude archived shelters, so orphaned
+  requests can never be selected for distribution or donation.
 - Shelters, warehouses, and disasters store optional `latitude` and `longitude`
   coordinates selected from the map. Facility coordinates are kept on each
   record because multiple facilities can share the same administrative location.
 - Team review explanations are stored in `teams.review_remark`.
+
+## Database Features (Triggers, Functions, Procedures, Complex Queries)
+
+All three objects are grouped for inspection in
+`backend/src/sqls/database-objects/` (see its `README.md`).
+
+- **Trigger:** `trg_inventory_audit` (`014`, inspectable in
+  `backend/src/sqls/database-objects/inventoryAuditSqls.js`) fires
+  `AFTER INSERT OR UPDATE OR DELETE` on `inventory` and logs every change to
+  the shadow table `inventory_audit_log`, distinguishing `INSERT`, `UPDATE`,
+  `ARCHIVE`, and `DELETE` events. Used for audit/history of sensitive stock
+  movements.
+- **Function:** `shelter_remaining_capacity(shelter_id)` (`016`, inspectable in
+  `backend/src/sqls/database-objects/shelterCapacitySqls.js`) returns remaining
+  beds as `capacity − active victims`. It is called inside `LIST_SHELTERS` /
+  `GET_SHELTER` and powers the victim-registration shelter dropdown.
+- **Procedure:** reverted — distribution assignment runs again as a
+  Node-managed transaction in `createDistribution`
+  (`backend/src/controllers/distributionController.js`), which performs the
+  multi-step workflow (request/team validation, per-item stock reservation,
+  distribution + item inserts, request approval) with `BEGIN`/`COMMIT`/
+  `ROLLBACK`. No stored procedure is currently deployed.
+- **Complex queries (multi-table and/or aggregation):** `LIST_RELIEF_REQUESTS`
+  (joins + `SUM`/`COUNT`/`json_agg` item summaries), `LIST_DISTRIBUTIONS`
+  (four-table join + `json_agg` items), and `LIST_VICTIMS` (correlated
+  occupancy `COUNT` subqueries + `CASE` availability). They back the relief
+  request list, distribution list, and donor “neediest requests” views.
 
 Run migrations in numeric order after the base schema:
 
@@ -353,3 +384,5 @@ Run migrations in numeric order after the base schema:
 13. `013_disaster_archive.sql` — archives disasters via `archived_at`, preserving victim history
 14. `014_inventory_audit_trigger.sql` — installs the audit trigger; the inspectable SQL is in `backend/src/sqls/inventoryAuditSqls.js`
 15. `015_fix_inventory_audit_action_types.sql` — allows `ARCHIVE` audit events on existing databases
+16. `016_shelter_capacity_function.sql` — adds `shelter_remaining_capacity()` computed function
+17. `017_remove_pending_request_status.sql` — folds stranded `pending` relief requests into `waiting_stock`

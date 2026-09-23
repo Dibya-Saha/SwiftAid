@@ -913,6 +913,16 @@ button {
   z-index: 100;
 }
 
+.select-menu--portal {
+  position: fixed;
+  right: auto;
+  top: auto;
+  left: auto;
+  width: max-content;
+  min-width: 0;
+  z-index: 4000;
+}
+
 /* thin scrollbar to match :root bg — select dropdown */
 .select-menu {
   scrollbar-width: thin;
@@ -1424,16 +1434,25 @@ button {
 
 .select-control--pill .select-trigger {
   width: auto;
-  min-width: 120px;
+  min-width: 108px;
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 4px 8px;
   font-family: var(--font-mono);
   font-size: 10px;
   background: var(--panel-alt);
 }
 
-.select-control--pill .select-menu {
-  min-width: 160px;
+.select-control--pill .select-menu,
+.select-menu--pill {
+  min-width: 0;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.select-menu--pill .select-option {
+  padding: 6px 8px;
+  font-size: 11px;
+  line-height: 1.25;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2221,6 +2240,11 @@ button {
   border: 1px solid var(--border);
   max-height: 52vh;
 }
+
+.relief-table-wrap:has(.select-control--open) {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
 .relief-table {
   width: 100%;
   table-layout: fixed;
@@ -2238,6 +2262,14 @@ button {
   font-size: 10px;
   padding: 10px 12px;
 }
+
+/* Keep column titles visible while scrolling the request list. */
+.relief-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg);
+}
 .relief-table td {
   vertical-align: middle;
 }
@@ -2246,9 +2278,30 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.relief-table td:has(.select-control) {
+  width: 128px;
+  min-width: 128px;
+  max-width: 128px;
+  overflow: hidden;
+}
+.relief-table .select-control--pill {
+  width: 112px;
+  min-width: 112px;
+  max-width: 112px;
+  flex-shrink: 0;
+}
 .relief-table .select-control--pill .select-trigger {
-  min-width: 120px;
-  max-width: 140px;
+  width: 112px;
+  min-width: 112px;
+  max-width: 112px;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+.relief-table .select-trigger .select-value {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 @media (max-width: 960px) {
   .relief-table th,

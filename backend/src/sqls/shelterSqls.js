@@ -11,7 +11,8 @@ const INSERT_LOCATION = `INSERT INTO locations (division, district, upazila, uni
 const LIST_SHELTERS = `SELECT
     s.shelter_id, s.name, s.address, s.capacity, s.admin_id,
     l.location_id, l.division, l.district, l.upazila, l.union_name,
-    s.latitude, s.longitude
+    s.latitude, s.longitude,
+    shelter_remaining_capacity(s.shelter_id) AS remaining_capacity
   FROM shelters s
   JOIN locations l ON l.location_id = s.location_id
   WHERE s.archived_at IS NULL
@@ -20,7 +21,8 @@ const LIST_SHELTERS = `SELECT
 const GET_SHELTER = `SELECT
     s.shelter_id, s.name, s.address, s.capacity, s.admin_id,
     l.location_id, l.division, l.district, l.upazila, l.union_name,
-    s.latitude, s.longitude
+    s.latitude, s.longitude,
+    shelter_remaining_capacity(s.shelter_id) AS remaining_capacity
   FROM shelters s
   JOIN locations l ON l.location_id = s.location_id
   WHERE s.shelter_id = $1 AND s.archived_at IS NULL`;
@@ -38,6 +40,10 @@ const DELETE_SHELTER = `UPDATE shelters SET archived_at = CURRENT_TIMESTAMP
   WHERE shelter_id = $1 AND admin_id = $2 AND archived_at IS NULL
   RETURNING shelter_id`;
 
+const REJECT_SHELTER_REQUESTS = `UPDATE relief_requests SET status = 'rejected'
+  WHERE shelter_id = $1
+    AND LOWER(status) IN ('waiting_stock', 'approved', 'partially_fulfilled')`;
+
 module.exports = {
   FIND_LOCATION,
   INSERT_LOCATION,
@@ -46,4 +52,5 @@ module.exports = {
   INSERT_SHELTER,
   UPDATE_SHELTER,
   DELETE_SHELTER,
+  REJECT_SHELTER_REQUESTS,
 };

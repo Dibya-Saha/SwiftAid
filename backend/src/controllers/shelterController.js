@@ -7,6 +7,7 @@ const {
   INSERT_SHELTER,
   UPDATE_SHELTER,
   DELETE_SHELTER,
+  REJECT_SHELTER_REQUESTS,
 } = require('../sqls/shelterSqls');
 
 function readShelterInput(body) {
@@ -135,14 +136,26 @@ async function updateShelter(req, res) {
 }
 
 async function deleteShelter(req, res) {
+  const client = await pool.connect();
   try {
-    const result = await pool.query(DELETE_SHELTER, [req.params.id, req.user.user_id]);
-    if (!result.rows[0]) return res.status(404).json({ message: 'Shelter not found' });
-    return res.json({ message: 'Shelter archived' });
+    await client.query('BEGIN');
+    const result = await client.query(DELETE_SHELTER, [req.params.id, req.user.user_id]);
+    if (!result.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Shelter not found' });
+    }
+    // Stranded open requests can never be fulfilled once their shelter is
+    // gone, so close them in the same transaction instead of orphaning them.
+    const rejected = await client.query(REJECT_SHELTER_REQUESTS, [req.params.id]);
+    await client.query('COMMIT');
+    return res.json({ message: 'Shelter archived', rejected_requests: rejected.rowCount });
   } catch (err) {
+    await client.query('ROLLBACK');
     if (err.code === '23503') return res.status(409).json({ message: 'Shelter cannot be deleted because another record references it' });
     console.error('[shelters/delete] error:', err);
     return res.status(500).json({ message: 'Failed to delete shelter' });
+  } finally {
+    client.release();
   }
 }
 

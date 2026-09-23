@@ -8,6 +8,7 @@ const {
   GET_RELIEF_REQUEST,
   GET_REQUEST_ITEMS,
   FIND_RELIEF_REQUEST,
+  FIND_REQUEST_SHELTER_ACTIVE,
   UPDATE_REQUEST_STATUS,
   FIND_REQUEST_ITEM,
   FIND_REQUEST_ITEM_BY_ITEM,
@@ -22,7 +23,7 @@ const {
   UPSERT_SHELTER_INVENTORY_TX,
 } = require('../sqls/reliefRequestSqls');
 
-const ALLOWED_STATUSES = ['pending', 'waiting_stock', 'approved', 'partially_fulfilled', 'rejected', 'fulfilled'];
+const ALLOWED_STATUSES = ['waiting_stock', 'approved', 'partially_fulfilled', 'rejected', 'fulfilled'];
 
 function integer(value) {
   const parsed = Number(value);
@@ -200,7 +201,12 @@ async function donateToReliefRequest(req, res) {
       return res.status(404).json({ message: 'Relief request not found' });
     }
     const rr = lockedReq.rows[0];
-    const statusLower = String(rr.status || 'pending').toLowerCase();
+    const shelterActive = await client.query(FIND_REQUEST_SHELTER_ACTIVE, [requestId]);
+    if (!shelterActive.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: 'Cannot donate to a request for an archived shelter' });
+    }
+    const statusLower = String(rr.status || 'waiting_stock').toLowerCase();
     if (statusLower === 'rejected') {
       await client.query('ROLLBACK');
       return res.status(400).json({ message: 'Cannot donate to a rejected request' });

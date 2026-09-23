@@ -9,6 +9,7 @@ export default function VictimManagementTab() {
   const [disasters, setDisasters] = useState([]);
   const [shelters, setShelters] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [editingShelterId, setEditingShelterId] = useState('');
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
@@ -32,21 +33,18 @@ export default function VictimManagementTab() {
     return (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
   }
 
-  const occupiedByShelter = (() => {
-    const counts = {};
-    for (const victim of victims) {
-      if (victim.shelter_id == null || victim.shelter_id === '') continue;
-      // Exclude the victim being edited so its own shelter stays selectable while re-saving.
-      if (editingId && String(victim.victim_id) === String(editingId)) continue;
-      const key = String(victim.shelter_id);
-      counts[key] = (counts[key] || 0) + 1;
-    }
-    return counts;
-  })();
-
+  // Authoritative remaining beds from shelter_remaining_capacity(); falls back
+  // to total capacity when the backend value is absent.
   const shelterOptions = [{ value: '', label: 'Unassigned' }, ...shelters.map((shelter) => {
-    const occupied = occupiedByShelter[String(shelter.shelter_id)] || 0;
-    const remaining = Math.max(Number(shelter.capacity) - occupied, 0);
+    const backendRemaining = Number(shelter.remaining_capacity);
+    let remaining = Number.isFinite(backendRemaining)
+      ? backendRemaining
+      : Math.max(Number(shelter.capacity) || 0, 0);
+    // The victim being edited already occupies a bed in its original shelter,
+    // so credit it back to keep that shelter selectable while re-saving.
+    if (editingId && editingShelterId !== '' && String(editingShelterId) === String(shelter.shelter_id)) {
+      remaining = Math.min(remaining + 1, Number(shelter.capacity) || remaining + 1);
+    }
     return {
       value: shelter.shelter_id,
       label: `${shelter.name} — ${remaining} remaining`,
@@ -56,6 +54,7 @@ export default function VictimManagementTab() {
 
   function startEdit(victim) {
     setEditingId(victim.victim_id);
+    setEditingShelterId(victim.shelter_id || '');
     setForm({
       full_name: victim.full_name || '',
       date_of_birth: victim.date_of_birth ? String(victim.date_of_birth).slice(0, 10) : '',
@@ -70,6 +69,7 @@ export default function VictimManagementTab() {
 
   function resetForm() {
     setEditingId(null);
+    setEditingShelterId('');
     setForm(EMPTY_VICTIM);
   }
 

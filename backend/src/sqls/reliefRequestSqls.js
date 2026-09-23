@@ -18,7 +18,7 @@ const LIST_RELIEF_REQUESTS = `SELECT
     COALESCE((SELECT SUM(ri.quantity_requested - ri.quantity_dispatched) FROM request_items ri WHERE ri.request_id = rr.request_id), 0)::int AS total_remaining,
     COALESCE((SELECT json_agg(json_build_object('item_name', i.name, 'unit', i.unit, 'quantity_requested', ri.quantity_requested, 'remaining', ri.quantity_requested - ri.quantity_dispatched) ORDER BY ri.request_item_id) FROM request_items ri JOIN items i ON i.item_id = ri.item_id WHERE ri.request_id = rr.request_id), '[]'::json) AS items_summary
   FROM relief_requests rr
-  JOIN shelters s ON s.shelter_id = rr.shelter_id
+  JOIN shelters s ON s.shelter_id = rr.shelter_id AND s.archived_at IS NULL
   JOIN users u ON u.user_id = rr.requested_by_admin_id
   ORDER BY rr.requested_at DESC, rr.request_id DESC`;
 
@@ -41,6 +41,11 @@ const GET_REQUEST_ITEMS = `SELECT
 
 const FIND_RELIEF_REQUEST = 'SELECT request_id, status FROM relief_requests WHERE request_id = $1';
 
+const FIND_REQUEST_SHELTER_ACTIVE = `SELECT s.shelter_id
+  FROM relief_requests rr
+  JOIN shelters s ON s.shelter_id = rr.shelter_id AND s.archived_at IS NULL
+  WHERE rr.request_id = $1`;
+
 const UPDATE_REQUEST_STATUS = `UPDATE relief_requests SET status = $2 WHERE request_id = $1
   RETURNING request_id, shelter_id, requested_by_admin_id, status, requested_at`;
 
@@ -57,7 +62,7 @@ const LIST_ELIGIBLE_REQUESTS = `SELECT
     rr.request_id, rr.shelter_id, rr.requested_by_admin_id, rr.status, rr.requested_at,
     s.name AS shelter_name
   FROM relief_requests rr
-  JOIN shelters s ON s.shelter_id = rr.shelter_id
+  JOIN shelters s ON s.shelter_id = rr.shelter_id AND s.archived_at IS NULL
   WHERE LOWER(rr.status) NOT IN ('rejected','fulfilled')
     AND EXISTS (
       SELECT 1 FROM request_items ri
@@ -102,6 +107,7 @@ module.exports = {
   GET_RELIEF_REQUEST,
   GET_REQUEST_ITEMS,
   FIND_RELIEF_REQUEST,
+  FIND_REQUEST_SHELTER_ACTIVE,
   UPDATE_REQUEST_STATUS,
   FIND_REQUEST_ITEM,
   FIND_REQUEST_ITEM_BY_ITEM,

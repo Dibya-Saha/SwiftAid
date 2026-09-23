@@ -10,7 +10,7 @@ const FIND_REQUEST_ITEM = `SELECT request_item_id, request_id, item_id,
 
 const RESERVE_WAREHOUSE_STOCK = `UPDATE inventory
   SET quantity = quantity - $3
-  WHERE warehouse_id = $1 AND item_id = $2 AND quantity >= $3
+  WHERE warehouse_id = $1 AND item_id = $2 AND archived_at IS NULL AND quantity >= $3
   RETURNING inventory_id, warehouse_id, item_id, quantity`;
 
 const RETURN_WAREHOUSE_STOCK = `INSERT INTO inventory (warehouse_id, item_id, quantity)
