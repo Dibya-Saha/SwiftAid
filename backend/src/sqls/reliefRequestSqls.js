@@ -14,8 +14,8 @@ const LIST_RELIEF_REQUESTS = `SELECT
     s.name AS shelter_name,
     u.full_name AS requester_name, u.email AS requester_email,
     COALESCE((SELECT COUNT(*) FROM request_items ri WHERE ri.request_id = rr.request_id), 0)::int AS item_count,
-    COALESCE((SELECT SUM(ri.quantity_requested) FROM request_items ri WHERE ri.request_id = rr.request_id), 0)::int AS total_requested,
-    COALESCE((SELECT SUM(ri.quantity_requested - ri.quantity_dispatched) FROM request_items ri WHERE ri.request_id = rr.request_id), 0)::int AS total_remaining,
+    (SELECT s.total_requested FROM request_summary(rr.request_id) s) AS total_requested,
+    (SELECT s.total_remaining FROM request_summary(rr.request_id) s) AS total_remaining,
     COALESCE((SELECT json_agg(json_build_object('item_name', i.name, 'unit', i.unit, 'quantity_requested', ri.quantity_requested, 'remaining', ri.quantity_requested - ri.quantity_dispatched) ORDER BY ri.request_item_id) FROM request_items ri JOIN items i ON i.item_id = ri.item_id WHERE ri.request_id = rr.request_id), '[]'::json) AS items_summary
   FROM relief_requests rr
   JOIN shelters s ON s.shelter_id = rr.shelter_id AND s.archived_at IS NULL
@@ -40,7 +40,8 @@ const GET_REQUEST_ITEMS = `SELECT
       JOIN distributions d ON d.distribution_id = di.distribution_id
       WHERE di.request_item_id = ri.request_item_id
         AND d.status NOT IN ('delivered', 'cancelled')
-    ), 0)::int AS assigned_active
+    ), 0)::int AS assigned_active,
+    request_item_available(ri.request_item_id) AS available
   FROM request_items ri
   JOIN items i ON i.item_id = ri.item_id
   WHERE ri.request_id = $1

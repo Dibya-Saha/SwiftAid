@@ -4,16 +4,11 @@ const FIND_REQUEST = `SELECT request_id, shelter_id, status
 const FIND_TEAM = `SELECT team_id FROM teams
   WHERE team_id = $1 AND LOWER(status) = 'approved'`;
 
-const FIND_REQUEST_ITEM = `SELECT request_item_id, request_id, item_id,
-    quantity_requested, quantity_dispatched
+// Locks the request row and returns its database-computed free quantity in
+// one round trip, so concurrent assignments serialize on the row lock.
+const GET_ITEM_AVAILABILITY = `SELECT request_item_id, request_id, item_id,
+    request_item_available(request_item_id) AS available
   FROM request_items WHERE request_item_id = $1 AND request_id = $2 FOR UPDATE`;
-
-const GET_ASSIGNED_FOR_REQUEST = `SELECT di.request_item_id,
-    COALESCE(SUM(di.quantity), 0)::int AS assigned_active
-  FROM distribution_items di
-  JOIN distributions d ON d.distribution_id = di.distribution_id
-  WHERE d.request_id = $1 AND d.status NOT IN ('delivered', 'cancelled')
-  GROUP BY di.request_item_id`;
 
 const RESERVE_WAREHOUSE_STOCK = `UPDATE inventory
   SET quantity = quantity - $3
@@ -123,36 +118,20 @@ const UPDATE_DISTRIBUTION_STATUS = `UPDATE distributions
   RETURNING distribution_id, request_id, warehouse_id, assigned_team_id,
     assigned_by_admin_id, status, distributed_at, picked_up_at, delivered_at`;
 
-const ADD_SHELTER_STOCK = `INSERT INTO shelter_inventory (shelter_id, item_id, quantity, updated_at)
-  VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-  ON CONFLICT (shelter_id, item_id)
-  DO UPDATE SET quantity = shelter_inventory.quantity + EXCLUDED.quantity,
-    updated_at = CURRENT_TIMESTAMP`;
-
-const INCREMENT_REQUEST_ITEM = `UPDATE request_items
-  SET quantity_dispatched = quantity_dispatched + $2
-  WHERE request_item_id = $1
-  RETURNING request_item_id, request_id, quantity_requested, quantity_dispatched`;
-
-const LOCK_ALL_REQUEST_ITEMS = `SELECT quantity_requested, quantity_dispatched
-  FROM request_items WHERE request_id = $1 FOR UPDATE`;
-
-const FULFILL_REQUEST = `UPDATE relief_requests SET status = 'fulfilled'
-  WHERE request_id = $1 RETURNING request_id, status`;
-
 const APPROVE_REQUEST = `UPDATE relief_requests SET status = 'approved'
   WHERE request_id = $1 AND LOWER(status) = 'waiting_stock'
   RETURNING request_id, status`;
 
-const PARTIALLY_FULFILL_REQUEST = `UPDATE relief_requests SET status = 'partially_fulfilled'
-  WHERE request_id = $1 AND LOWER(status) IN ('waiting_stock', 'approved')
-  RETURNING request_id, status`;
+// Reads back the row stamped delivered by CALL deliver_distribution($1).
+const GET_DELIVERED_DISTRIBUTION = `SELECT distribution_id, request_id,
+    warehouse_id, assigned_team_id, assigned_by_admin_id, status,
+    distributed_at, picked_up_at, delivered_at
+  FROM distributions WHERE distribution_id = $1`;
 
 module.exports = {
-  FIND_REQUEST, FIND_TEAM, FIND_REQUEST_ITEM, GET_ASSIGNED_FOR_REQUEST, RESERVE_WAREHOUSE_STOCK,
+  FIND_REQUEST, FIND_TEAM, GET_ITEM_AVAILABILITY, RESERVE_WAREHOUSE_STOCK,
   RETURN_WAREHOUSE_STOCK, CREATE_DISTRIBUTION, CREATE_DISTRIBUTION_ITEM,
   LIST_DISTRIBUTIONS, LIST_TEAM_DISTRIBUTIONS, GET_DISTRIBUTION,
   GET_DISTRIBUTION_ITEMS, LOCK_DISTRIBUTION, UPDATE_DISTRIBUTION_STATUS,
-  ADD_SHELTER_STOCK, INCREMENT_REQUEST_ITEM, LOCK_ALL_REQUEST_ITEMS,
-  FULFILL_REQUEST, APPROVE_REQUEST, PARTIALLY_FULFILL_REQUEST,
+  APPROVE_REQUEST, GET_DELIVERED_DISTRIBUTION,
 };

@@ -1,5 +1,6 @@
 const pool = require("../db");
 const sql = require("../sqls/distributionSqls");
+const deliverSql = require("../sqls/database-objects/deliverDistributionProcedureSqls");
 
 function integer(value) {
   const parsed = Number(value);
@@ -45,13 +46,6 @@ async function createDistribution(req, res) {
       return res.status(400).json({ message: "Team is not approved" });
     }
 
-    // Quantities already promised to other teams but not yet delivered or
-    // cancelled still count against the request until they land or release.
-    const assignedRes = await client.query(sql.GET_ASSIGNED_FOR_REQUEST, [requestId]);
-    const assignedByItem = new Map(
-      assignedRes.rows.map((row) => [row.request_item_id, Number(row.assigned_active) || 0]),
-    );
-
     const items = [];
     for (const raw of rawItems) {
       const requestItemId = integer(raw.request_item_id);
@@ -65,30 +59,28 @@ async function createDistribution(req, res) {
               "Each distribution item requires a positive integer quantity",
           });
       }
-      const requestItem = await client.query(sql.FIND_REQUEST_ITEM, [
+      // Row lock serializes concurrent assignments; the free quantity already
+      // subtracts dispatched units and quantities promised to other teams.
+      const availability = await client.query(sql.GET_ITEM_AVAILABILITY, [
         requestItemId,
         requestId,
       ]);
-      if (!requestItem.rows[0]) {
+      if (!availability.rows[0]) {
         await client.query("ROLLBACK");
         return res.status(404).json({ message: "Request item not found" });
       }
-      const remaining =
-        requestItem.rows[0].quantity_requested -
-        requestItem.rows[0].quantity_dispatched;
-      const assigned = assignedByItem.get(requestItemId) || 0;
-      const available = Math.max(remaining - assigned, 0);
+      const available = Number(availability.rows[0].available) || 0;
       if (quantity > available) {
         await client.query("ROLLBACK");
         return res
           .status(400)
           .json({
-            message: `Distribution exceeds the unassigned remaining quantity (${assigned} already assigned)`,
+            message: `Distribution exceeds the unassigned remaining quantity (only ${available} available)`,
           });
       }
       const stock = await client.query(sql.RESERVE_WAREHOUSE_STOCK, [
         warehouseId,
-        requestItem.rows[0].item_id,
+        availability.rows[0].item_id,
         quantity,
       ]);
       if (!stock.rows[0]) {
@@ -99,7 +91,7 @@ async function createDistribution(req, res) {
       }
       items.push({
         request_item_id: requestItemId,
-        item_id: requestItem.rows[0].item_id,
+        item_id: availability.rows[0].item_id,
         quantity,
       });
     }
@@ -202,38 +194,16 @@ async function updateDistributionStatus(req, res) {
         .status(400)
         .json({ message: "Distribution must be picked up before delivery" });
     }
-    const items = (await client.query(sql.GET_DISTRIBUTION_ITEMS, [id])).rows;
+    // Shelter stock, dispatched counts, and the delivered stamp run atomically
+    // inside the database procedure; the status-sync trigger advances the
+    // parent relief request automatically.
     if (status === "delivered") {
-      for (const item of items) {
-        await client.query(sql.ADD_SHELTER_STOCK, [
-          current.shelter_id,
-          item.item_id,
-          item.quantity,
-        ]);
-        await client.query(sql.INCREMENT_REQUEST_ITEM, [
-          item.request_item_id,
-          item.quantity,
-        ]);
-      }
-      const all = await client.query(sql.LOCK_ALL_REQUEST_ITEMS, [
-        current.request_id,
-      ]);
-      const allFulfilled =
-        all.rows.length &&
-        all.rows.every(
-          (item) => item.quantity_dispatched >= item.quantity_requested,
-        );
-      const someDispatched = all.rows.some(
-        (item) => item.quantity_dispatched > 0,
-      );
-      if (allFulfilled)
-        await client.query(sql.FULFILL_REQUEST, [current.request_id]);
-      else if (someDispatched)
-        await client.query(sql.PARTIALLY_FULFILL_REQUEST, [current.request_id]);
+      await client.query(deliverSql.CALL_DELIVER_DISTRIBUTION, [id]);
     } else if (
       status === "cancelled" &&
       ["assigned", "picked_up", "in_transit"].includes(current.status)
     ) {
+      const items = (await client.query(sql.GET_DISTRIBUTION_ITEMS, [id])).rows;
       for (const item of items)
         await client.query(sql.RETURN_WAREHOUSE_STOCK, [
           current.warehouse_id,
@@ -241,10 +211,10 @@ async function updateDistributionStatus(req, res) {
           item.quantity,
         ]);
     }
-    const result = await client.query(sql.UPDATE_DISTRIBUTION_STATUS, [
-      id,
-      status,
-    ]);
+    const result =
+      status === "delivered"
+        ? await client.query(sql.GET_DELIVERED_DISTRIBUTION, [id])
+        : await client.query(sql.UPDATE_DISTRIBUTION_STATUS, [id, status]);
     await client.query("COMMIT");
     return res.json({ distribution: result.rows[0] });
   } catch (err) {

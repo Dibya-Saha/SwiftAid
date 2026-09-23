@@ -33,6 +33,14 @@ export default function DistributionManagementTab() {
 
   useEffect(() => { load(); }, []);
 
+  // Server-computed free quantity (request_item_available()); falls back to
+  // the client calculation when the field is absent.
+  function itemAvailable(item) {
+    const remaining = item.remaining ?? item.quantity_requested - item.quantity_dispatched;
+    if (item.available !== undefined && item.available !== null) return Math.max(Number(item.available) || 0, 0);
+    return Math.max(remaining - (Number(item.assigned_active) || 0), 0);
+  }
+
   const stockByWarehouseItem = (() => {
     const map = new Map();
     for (const row of inventory) map.set(`${row.warehouse_id}:${row.item_id}`, Number(row.quantity) || 0);
@@ -61,8 +69,7 @@ export default function DistributionManagementTab() {
       setDetail(request);
       const init = {};
       for (const item of request.items || []) {
-        const remaining = item.remaining ?? item.quantity_requested - item.quantity_dispatched;
-        const available = Math.max(remaining - (Number(item.assigned_active) || 0), 0);
+        const available = itemAvailable(item);
         const stock = warehouseId ? (stockByWarehouseItem.get(`${warehouseId}:${item.item_id}`) || 0) : available;
         const max = Math.min(available, stock);
         init[item.request_item_id] = String(max > 0 ? max : '');
@@ -75,8 +82,7 @@ export default function DistributionManagementTab() {
     if (!detail?.items) return;
     const next = {};
     for (const item of detail.items) {
-      const remaining = item.remaining ?? item.quantity_requested - item.quantity_dispatched;
-      const available = Math.max(remaining - (Number(item.assigned_active) || 0), 0);
+      const available = itemAvailable(item);
       const stock = warehouseId ? (stockByWarehouseItem.get(`${warehouseId}:${item.item_id}`) || 0) : 0;
       const max = warehouseId ? Math.min(available, stock) : available;
       const current = Number(quantities[item.request_item_id]);
@@ -94,9 +100,7 @@ export default function DistributionManagementTab() {
     setError(''); setMessage('');
     if (!warehouseId) { setError('Select a warehouse to see available stock before assigning.'); return; }
     const items = (detail?.items || []).map((item) => {
-      const remaining = item.remaining ?? item.quantity_requested - item.quantity_dispatched;
-      const assigned = Number(item.assigned_active) || 0;
-      const available = Math.max(remaining - assigned, 0);
+      const available = itemAvailable(item);
       const stock = warehouseStockForDetail.get(item.request_item_id) ?? 0;
       const max = Math.min(available, stock);
       const qty = Number(quantities[item.request_item_id]);
@@ -161,7 +165,7 @@ export default function DistributionManagementTab() {
         {detail && <div className="table-wrap"><table className="data-table"><thead><tr><th>Item</th><th>Needed<br /><small style={{ fontWeight: 400, textTransform: 'none' }}>requested − dispatched</small></th><th>Available in warehouse</th><th>Transfer quantity</th></tr></thead><tbody>{detail.items.map((item) => {
           const remaining = item.remaining ?? item.quantity_requested - item.quantity_dispatched;
           const assigned = Number(item.assigned_active) || 0;
-          const available = Math.max(remaining - assigned, 0);
+          const available = itemAvailable(item);
           const stock = warehouseId ? (warehouseStockForDetail.get(item.request_item_id) ?? 0) : null;
           const max = stock !== null ? Math.min(available, stock) : available;
           const insufficient = stock !== null && stock < available;

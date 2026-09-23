@@ -361,6 +361,32 @@ All database objects are grouped for inspection in
   `partially_fulfilled`/`fulfilled` atomically across `request_items` and
   `relief_requests`. Called by `updateDispatchedQuantity` in
   `reliefRequestController.js` whenever dispatched quantities are saved.
+- **Function:** `request_item_available(request_item_id)` (`019`, inspectable in
+  `backend/src/sqls/database-objects/requestAvailabilitySqls.js`) returns units
+  still free for new assignments as `requested − dispatched − active assigned`
+  (distributions that are neither `delivered` nor `cancelled`). It is called
+  inside `GET_REQUEST_ITEMS` and the distribution-assignment check, and backs
+  the transfer cap in the admin distribution form.
+- **Trigger:** `trg_validate_request_item_dispatched` (`020`, inspectable in
+  `backend/src/sqls/database-objects/requestItemValidationTriggerSqls.js`)
+  fires `BEFORE INSERT OR UPDATE` on `request_items` and rejects dispatched
+  quantities above the requested quantity, even when the change bypasses the
+  application.
+- **Trigger:** `trg_sync_relief_request_status` (`021`, inspectable in
+  `backend/src/sqls/database-objects/requestStatusSyncTriggerSqls.js`) fires
+  `AFTER UPDATE OF quantity_dispatched` on `request_items` and moves the parent
+  request to `fulfilled`/`partially_fulfilled`, replacing the status computation
+  previously done in the delivery controller.
+- **Function:** `request_summary(request_id)` (`022`, inspectable in
+  `backend/src/sqls/database-objects/requestSummarySqls.js`) returns one
+  request's total requested, dispatched, and remaining units in a single call.
+  It backs `total_requested`/`total_remaining` in `LIST_RELIEF_REQUESTS`.
+- **Procedure:** `deliver_distribution(distribution_id)` (`023`, inspectable in
+  `backend/src/sqls/database-objects/deliverDistributionProcedureSqls.js`)
+  moves every item into shelter stock, counts it as dispatched, and stamps the
+  distribution `delivered` atomically; the sync trigger advances the parent
+  request. Called by `updateDistributionStatus` in
+  `distributionController.js`.
 - **Complex queries (multi-table and/or aggregation):** `LIST_RELIEF_REQUESTS`
   (joins + `SUM`/`COUNT`/`json_agg` item summaries), `LIST_DISTRIBUTIONS`
   (four-table join + `json_agg` items), and `LIST_VICTIMS` (correlated
@@ -387,3 +413,8 @@ Run migrations in numeric order after the base schema:
 16. `016_shelter_capacity_function.sql` — adds `shelter_remaining_capacity()` computed function
 17. `017_remove_pending_request_status.sql` — folds stranded `pending` relief requests into `waiting_stock`
 18. `018_set_dispatched_procedure.sql` — adds `set_dispatched()` atomic dispatch-update procedure
+19. `019_request_availability_function.sql` — adds `request_item_available()` free-quantity function
+20. `020_request_item_validation_trigger.sql` — installs the dispatched-quantity upper-bound trigger
+21. `021_request_status_sync_trigger.sql` — auto-syncs relief-request status from dispatched quantities
+22. `022_request_summary_function.sql` — adds `request_summary()` request-totals function
+23. `023_deliver_distribution_procedure.sql` — adds `deliver_distribution()` atomic delivery procedure
