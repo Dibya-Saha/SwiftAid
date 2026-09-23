@@ -387,6 +387,12 @@ All database objects are grouped for inspection in
   distribution `delivered` atomically; the sync trigger advances the parent
   request. Called by `updateDistributionStatus` in
   `distributionController.js`.
+- **Procedure:** `record_donation(donor_id, warehouse_id, items, donation_ids)`
+  (`024`, inspectable in
+  `backend/src/sqls/database-objects/recordDonationProcedureSqls.js`)
+  validates the warehouse and every item, inserts the donation rows, and adds
+  the quantities to warehouse inventory atomically, returning the created
+  donation ids. Called by `createDonation` in `donationController.js`.
 - **Complex queries (multi-table and/or aggregation):** `LIST_RELIEF_REQUESTS`
   (joins + `SUM`/`COUNT`/`json_agg` item summaries), `LIST_DISTRIBUTIONS`
   (four-table join + `json_agg` items), and `LIST_VICTIMS` (correlated
@@ -418,3 +424,4 @@ Run migrations in numeric order after the base schema:
 21. `021_request_status_sync_trigger.sql` — auto-syncs relief-request status from dispatched quantities
 22. `022_request_summary_function.sql` — adds `request_summary()` request-totals function
 23. `023_deliver_distribution_procedure.sql` — adds `deliver_distribution()` atomic delivery procedure
+24. `024_record_donation_procedure.sql` — adds `record_donation()` atomic donation procedure

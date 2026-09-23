@@ -50,3 +50,9 @@ Live path: called inside the relief-request list query for total_requested and t
 Completes a picked-up or in-transit distribution atomically: moves every item into shelter stock, counts it as dispatched, and stamps the distribution delivered. The status-sync trigger advances the parent request.
 
 Live path: called by updateDistributionStatus in distributionController.js; the controller keeps permission checks, transition validation, and HTTP responses. Migration: 023_deliver_distribution_procedure.sql.
+
+## 9. Procedure — recordDonationProcedureSqls.js
+
+Records a donor's warehouse donation atomically: validates the warehouse and every item, inserts the donation rows, adds the quantities to warehouse inventory, and returns the created donation ids so the caller can read back the exact rows.
+
+Live path: called by createDonation in donationController.js; the controller keeps payload validation, donor authentication, and HTTP responses. Migration: 024_record_donation_procedure.sql.

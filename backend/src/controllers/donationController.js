@@ -1,13 +1,11 @@
 const pool = require('../db');
 const {
-  CREATE_DONATION,
-  FIND_WAREHOUSE,
-  FIND_ITEM,
-  UPSERT_INVENTORY,
+  GET_CREATED_DONATIONS,
   LIST_MY_DONATIONS,
   LIST_DONATIONS,
   GET_DONATION,
 } = require('../sqls/donationSqls');
+const donationProcedureSql = require('../sqls/database-objects/recordDonationProcedureSqls');
 
 function integer(value) {
   const parsed = Number(value);
@@ -64,31 +62,42 @@ async function createDonation(req, res) {
   try {
     await client.query('BEGIN');
 
-    const warehouse = await client.query(FIND_WAREHOUSE, [warehouseId]);
-    if (!warehouse.rows[0]) {
+    // Warehouse/item validation, donation inserts, and inventory updates run
+    // atomically inside the database procedure.
+    let donationIds = [];
+    try {
+      const callResult = await client.query(donationProcedureSql.CALL_RECORD_DONATION, [donorId, warehouseId, JSON.stringify(items)]);
+      donationIds = callResult.rows[0].p_donation_ids || [];
+    } catch (procedureErr) {
+      const procedureMessage = String(procedureErr.message || '');
       await client.query('ROLLBACK');
-      return res.status(404).json({ message: 'Warehouse not found' });
-    }
-
-    // Validate all items exist before any insert
-    for (const { item_id } of items) {
-      const item = await client.query(FIND_ITEM, [item_id]);
-      if (!item.rows[0]) {
-        await client.query('ROLLBACK');
-        return res.status(404).json({ message: `Item not found: ${item_id}` });
+      if (procedureMessage.includes('WAREHOUSE_NOT_FOUND')) {
+        return res.status(404).json({ message: 'Warehouse not found' });
       }
+      const missingItem = procedureMessage.match(/ITEM_NOT_FOUND:(\d+)/);
+      if (missingItem) {
+        return res.status(404).json({ message: `Item not found: ${missingItem[1]}` });
+      }
+      throw procedureErr;
     }
 
-    const donations = [];
-    const inventories = [];
-    for (const { item_id, quantity } of items) {
-      const donationResult = await client.query(CREATE_DONATION, [donorId, warehouseId, item_id, quantity]);
-      const inventoryResult = await client.query(UPSERT_INVENTORY, [warehouseId, item_id, quantity]);
-      donations.push(donationResult.rows[0]);
-      inventories.push(inventoryResult.rows[0]);
-    }
-
+    const created = (await client.query(GET_CREATED_DONATIONS, [donationIds])).rows;
     await client.query('COMMIT');
+
+    const donations = created.map((row) => ({
+      donation_id: row.donation_id,
+      donor_id: row.donor_id,
+      warehouse_id: row.warehouse_id,
+      item_id: row.item_id,
+      quantity: row.quantity,
+      donated_at: row.donated_at,
+    }));
+    const inventories = created.map((row) => ({
+      inventory_id: row.inventory_id,
+      warehouse_id: row.warehouse_id,
+      item_id: row.item_id,
+      quantity: row.inventory_quantity,
+    }));
 
     // Backward compatibility: single-item payload returns singular keys
     if (isSingleLegacy && donations.length === 1) {

@@ -1,15 +1,12 @@
-const CREATE_DONATION = `INSERT INTO donations (donor_id, warehouse_id, item_id, quantity)
-  VALUES ($1, $2, $3, $4)
-  RETURNING donation_id, donor_id, warehouse_id, item_id, quantity, donated_at`;
-
-const FIND_WAREHOUSE = 'SELECT warehouse_id FROM warehouses WHERE warehouse_id = $1 AND archived_at IS NULL';
-const FIND_ITEM = 'SELECT item_id FROM items WHERE item_id = $1 AND archived_at IS NULL';
-
-const UPSERT_INVENTORY = `INSERT INTO inventory (warehouse_id, item_id, quantity)
-  VALUES ($1, $2, $3)
-  ON CONFLICT (warehouse_id, item_id)
-  DO UPDATE SET quantity = inventory.quantity + EXCLUDED.quantity, archived_at = NULL
-  RETURNING inventory_id, warehouse_id, item_id, quantity`;
+// Reads back rows written by CALL record_donation($1, $2, $3) in creation
+// order, joining each donation to its updated inventory row.
+const GET_CREATED_DONATIONS = `SELECT d.donation_id, d.donor_id, d.warehouse_id,
+    d.item_id, d.quantity, d.donated_at,
+    i.inventory_id, i.quantity AS inventory_quantity
+  FROM donations d
+  JOIN inventory i ON i.warehouse_id = d.warehouse_id AND i.item_id = d.item_id
+  WHERE d.donation_id = ANY($1)
+  ORDER BY d.donation_id`;
 
 const LIST_MY_DONATIONS = `SELECT
     d.donation_id, d.quantity, d.donated_at,
@@ -47,10 +44,7 @@ const GET_DONATION = `SELECT
   WHERE d.donation_id = $1`;
 
 module.exports = {
-  CREATE_DONATION,
-  FIND_WAREHOUSE,
-  FIND_ITEM,
-  UPSERT_INVENTORY,
+  GET_CREATED_DONATIONS,
   LIST_MY_DONATIONS,
   LIST_DONATIONS,
   GET_DONATION,
