@@ -115,7 +115,6 @@ export default function FacilityOverviewMap({ shelters = [], warehouses = [] }) 
     <section className="facility-overview" aria-label="Registered facilities map">
       <div className="facility-overview__header">
         <div>
-          <p className="eyebrow">Facilities map</p>
           <h3>Registered shelters &amp; warehouses</h3>
         </div>
         <div className="facility-overview__meta">

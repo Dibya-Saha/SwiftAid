@@ -148,7 +148,6 @@ export default function DistributionManagementTab() {
       {message && <div className="success-banner">{message}</div>}
       {error && <div className="error-banner">{error}</div>}
       {pendingHint && <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 6, padding: '10px 12px', fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>{pendingHint}</div>}
-      {requests.length > 0 && !detail && <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>Showing {requests.length} waiting_stock / approved / partially_fulfilled requests. New requests now start as Waiting Stock.</div>}
       <form onSubmit={submit}>
         <div className="form-grid">
           <label className="field"><span className="field-label">Relief request</span><Select value={requestId} onChange={(e) => selectRequest(e.target.value)} placeholder="Select request" options={visibleRequests.map((r) => {
