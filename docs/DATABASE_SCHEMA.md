@@ -351,3 +351,5 @@ Run migrations in numeric order after the base schema:
 11. `011_facility_coordinates.sql` — adds validated map coordinates to shelters and warehouses
 12. `012_disaster_coordinates.sql` — adds validated map coordinates to disasters
 13. `013_disaster_archive.sql` — archives disasters via `archived_at`, preserving victim history
+14. `014_inventory_audit_trigger.sql` — installs the audit trigger; the inspectable SQL is in `backend/src/sqls/inventoryAuditSqls.js`
+15. `015_fix_inventory_audit_action_types.sql` — allows `ARCHIVE` audit events on existing databases

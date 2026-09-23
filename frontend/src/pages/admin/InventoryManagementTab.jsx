@@ -53,6 +53,7 @@ export default function InventoryManagementTab() {
       const result = await deleteInventory(id);
       setIsError(false);
       setMessage(result.message || 'Inventory record archived.');
+      setInventory((rows) => rows.filter((row) => row.inventory_id !== id));
       await refresh();
     } catch (err) {
       setIsError(true);

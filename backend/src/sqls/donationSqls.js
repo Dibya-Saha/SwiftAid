@@ -8,7 +8,7 @@ const FIND_ITEM = 'SELECT item_id FROM items WHERE item_id = $1 AND archived_at 
 const UPSERT_INVENTORY = `INSERT INTO inventory (warehouse_id, item_id, quantity)
   VALUES ($1, $2, $3)
   ON CONFLICT (warehouse_id, item_id)
-  DO UPDATE SET quantity = inventory.quantity + EXCLUDED.quantity
+  DO UPDATE SET quantity = inventory.quantity + EXCLUDED.quantity, archived_at = NULL
   RETURNING inventory_id, warehouse_id, item_id, quantity`;
 
 const LIST_MY_DONATIONS = `SELECT

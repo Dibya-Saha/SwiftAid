@@ -16,7 +16,7 @@ const RESERVE_WAREHOUSE_STOCK = `UPDATE inventory
 const RETURN_WAREHOUSE_STOCK = `INSERT INTO inventory (warehouse_id, item_id, quantity)
   VALUES ($1, $2, $3)
   ON CONFLICT (warehouse_id, item_id)
-  DO UPDATE SET quantity = inventory.quantity + EXCLUDED.quantity
+  DO UPDATE SET quantity = inventory.quantity + EXCLUDED.quantity, archived_at = NULL
   RETURNING inventory_id, warehouse_id, item_id, quantity`;
 
 const CREATE_DISTRIBUTION = `INSERT INTO distributions
