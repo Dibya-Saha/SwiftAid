@@ -15,9 +15,20 @@
   --danger: #e4572e;
   --success: #4c9a6a;
 
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-body: 'IBM Plex Sans', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "IBM Plex Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+
+  --glass-r-lg: 22px;
+  --glass-r-md: 14px;
+  --glass-r-sm: 11px;
+  --glass-tint: 20, 40, 44;
+  --glass-bg: rgba(var(--glass-tint), 0.46);
+  --glass-bg-heavy: rgba(var(--glass-tint), 0.62);
+  --glass-bg-light: rgba(var(--glass-tint), 0.3);
+  --glass-border: rgba(234, 242, 241, 0.16);
+  --glass-highlight: rgba(255, 255, 255, 0.16);
+  --glass-blur: blur(26px) saturate(170%);
 }
 
 * {
@@ -36,6 +47,52 @@ body {
   color: var(--text);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      620px 480px at 8% -6%,
+      rgba(242, 183, 5, 0.16),
+      transparent 60%
+    ),
+    radial-gradient(
+      680px 560px at 96% 8%,
+      rgba(94, 234, 212, 0.14),
+      transparent 62%
+    ),
+    radial-gradient(
+      720px 620px at 50% 108%,
+      rgba(45, 155, 191, 0.16),
+      transparent 60%
+    );
+  animation: ambientDrift 26s ease-in-out infinite alternate;
+}
+
+@keyframes ambientDrift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-2%, 2%, 0) scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+  }
+}
+
+#root {
+  position: relative;
+  z-index: 1;
 }
 
 /* Global thin scrollbar — whole website (exact :root bg colors) */
@@ -112,7 +169,8 @@ button {
     transform: scale(1);
   }
   50% {
-    filter: drop-shadow(0 0 18px rgba(242, 183, 5, 1)) drop-shadow(0 0 32px rgba(242, 183, 5, 0.4));
+    filter: drop-shadow(0 0 18px rgba(242, 183, 5, 1))
+      drop-shadow(0 0 32px rgba(242, 183, 5, 0.4));
     transform: scale(1.18);
   }
 }
@@ -123,7 +181,8 @@ button {
     filter: drop-shadow(0 0 0 rgba(165, 243, 252, 0));
   }
   50% {
-    filter: drop-shadow(0 0 14px rgba(165, 243, 252, 0.65)) drop-shadow(0 0 28px rgba(45, 212, 191, 0.45));
+    filter: drop-shadow(0 0 14px rgba(165, 243, 252, 0.65))
+      drop-shadow(0 0 28px rgba(45, 212, 191, 0.45));
   }
 }
 
@@ -245,7 +304,12 @@ button {
 
 .text-gradient {
   color: #5eead4;
-  background-image: linear-gradient(0deg, #2dd4bf 18%, #7dd3fc 52%, #f0fdfa 88%);
+  background-image: linear-gradient(
+    0deg,
+    #2dd4bf 18%,
+    #7dd3fc 52%,
+    #f0fdfa 88%
+  );
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -264,19 +328,34 @@ button {
   position: relative;
   overflow: hidden;
   isolation: isolate;
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.btn-primary:active,
+.btn-secondary:active,
+.btn-danger:active,
+.btn-ghost:active {
+  transform: scale(0.98);
 }
 
 .btn-primary::before,
 .btn-secondary::before,
 .btn-danger::before,
 .btn-ghost::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   z-index: 0;
   width: 34%;
   border-radius: inherit;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.32), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.32),
+    transparent
+  );
   transform: translateX(-140%) skewX(-18deg);
   pointer-events: none;
   animation: glassShimmer 4.5s ease-in-out infinite;
@@ -297,12 +376,15 @@ button {
   color: var(--accent);
   border: 1px solid rgba(242, 183, 5, 0.55);
   padding: 12px 16px;
-  border-radius: 4px;
+  border-radius: var(--glass-r-sm);
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 0.02em;
   margin-top: 6px;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .btn-primary:hover {
@@ -329,12 +411,14 @@ button {
   color: var(--accent);
   border: 1px solid var(--accent);
   padding: 10px 16px;
-  border-radius: 4px;
+  border-radius: var(--glass-r-sm);
   font-weight: 600;
   font-size: 13px;
   margin-top: 10px;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .btn-secondary:hover {
@@ -353,12 +437,14 @@ button {
   color: #e0504a;
   border: 1px solid #e0504a;
   padding: 10px 16px;
-  border-radius: 4px;
+  border-radius: var(--glass-r-sm);
   font-weight: 600;
   font-size: 13px;
   margin-top: 10px;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .btn-danger:hover {
@@ -376,9 +462,12 @@ button {
   border: 1px solid var(--border);
   color: var(--text);
   padding: 8px 14px;
-  border-radius: 4px;
+  border-radius: var(--glass-r-sm);
   font-size: 13px;
-  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
 }
 
 .btn-ghost:hover {
@@ -437,11 +526,14 @@ button {
 .field textarea,
 .select-trigger {
   width: 100%;
-  background: var(--panel);
-  border: 1px solid var(--border);
+  background: var(--glass-bg-light);
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
   color: var(--text);
   padding: 11px 12px;
-  border-radius: 4px;
+  border-radius: var(--glass-r-sm);
   font-size: 14px;
   font-family: var(--font-body);
 }
@@ -452,6 +544,9 @@ button {
 .select-control--open .select-trigger,
 .select-trigger:focus-visible {
   border-color: var(--accent);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.3),
+    0 0 0 3px rgba(242, 183, 5, 0.16);
   outline: none;
 }
 
@@ -476,11 +571,12 @@ button {
 .data-table input[type="text"],
 .data-table .field-input {
   width: 110px;
-  background: var(--panel);
-  border: 1px solid var(--border);
+  background: var(--glass-bg-light);
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28);
   color: var(--text);
   padding: 8px 10px;
-  border-radius: 4px;
+  border-radius: var(--glass-r-sm);
   font-size: 13px;
   font-family: var(--font-body);
 }
@@ -509,21 +605,27 @@ button {
 
 /* Banners */
 .error-banner {
-  background: rgba(228, 87, 46, 0.12);
-  border: 1px solid var(--danger);
+  background: rgba(228, 87, 46, 0.16);
+  border: 1px solid rgba(228, 87, 46, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
   color: #ffb8a3;
   padding: 10px 12px;
-  border-radius: 4px;
+  border-radius: var(--glass-r-sm);
   font-size: 13px;
   margin-bottom: 16px;
 }
 
 .success-banner {
-  background: rgba(76, 154, 106, 0.12);
-  border: 1px solid var(--success);
+  background: rgba(76, 154, 106, 0.16);
+  border: 1px solid rgba(76, 154, 106, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
   color: #b7e6c8;
   padding: 10px 12px;
-  border-radius: 4px;
+  border-radius: var(--glass-r-sm);
   font-size: 13px;
   margin-bottom: 16px;
 }
@@ -535,7 +637,7 @@ button {
 .team-card {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--glass-r-lg);
   padding: 20px;
 }
 
@@ -550,13 +652,17 @@ button {
 .team-card {
   position: relative;
   isolation: isolate;
-  background: rgba(20, 40, 44, 0.62);
-  border-color: rgba(234, 242, 241, 0.18);
+  background: var(--glass-bg-heavy);
+  border-color: var(--glass-border);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 1px 0 var(--glass-highlight),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
     0 24px 56px -28px rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
 }
 
 @supports (background: color-mix(in oklab, white 10%, transparent)) {
@@ -580,12 +686,14 @@ button {
 .auth-card::before,
 .empty-state::before,
 .team-card::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   z-index: 0;
   border-radius: inherit;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 38%);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 42%),
+    linear-gradient(to top, rgba(0, 0, 0, 0.1), transparent 30%);
   pointer-events: none;
 }
 
@@ -618,7 +726,7 @@ button {
 
 .empty-state {
   border: 1px dashed var(--border);
-  border-radius: 6px;
+  border-radius: var(--glass-r-md);
   padding: 32px;
   color: var(--muted);
   font-size: 14px;
@@ -675,8 +783,10 @@ button {
 }
 
 .status-select {
-  background: var(--panel-alt);
-  border: 1px solid var(--border);
+  background: var(--glass-bg-light);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
   color: var(--text);
   border-radius: 999px;
   padding: 6px 10px;
@@ -742,7 +852,9 @@ button {
   height: 18px;
   color: var(--muted);
   flex-shrink: 0;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), color 0.22s ease;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.22s ease;
 }
 
 .select-chevron svg {
@@ -766,10 +878,14 @@ button {
   margin: 0;
   padding: 6px;
   list-style: none;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--panel);
-  box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.85);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-r-md);
+  background: var(--glass-bg-heavy);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 18px 40px -20px rgba(0, 0, 0, 0.85);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   max-height: 240px;
   overflow-y: auto;
   opacity: 0;
@@ -823,9 +939,12 @@ button {
 
 .select-option {
   padding: 10px 12px;
-  border-radius: 4px;
+  border-radius: var(--glass-r-sm);
   cursor: pointer;
-  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
 }
 
 .select-option--active,
@@ -861,8 +980,11 @@ button {
   gap: 12px;
   padding: 11px 12px;
   border: 1px solid rgba(242, 183, 5, 0.32);
-  border-radius: 4px;
-  background: rgba(242, 183, 5, 0.10);
+  border-radius: var(--glass-r-sm);
+  background: rgba(242, 183, 5, 0.14);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
   color: var(--text);
   animation: cardReveal 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -920,7 +1042,7 @@ button {
 .location-picker__map {
   margin-top: 10px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--glass-r-md);
   overflow: hidden;
 }
 
@@ -939,9 +1061,12 @@ button {
 
 .facility-overview {
   margin: 16px 0 20px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--panel);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-r-md);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
   overflow: hidden;
 }
 
@@ -994,9 +1119,14 @@ button {
   top: 10px;
   right: 10px;
   z-index: 600;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--panel-alt);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-r-md);
+  background: var(--glass-bg-heavy);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 8px 20px -10px rgba(0, 0, 0, 0.6);
   color: var(--text);
   font-size: 11px;
   padding: 6px 10px;
@@ -1127,11 +1257,19 @@ button {
 }
 
 .facility-dot--shelter .facility-dot__glow {
-  background: radial-gradient(circle, rgba(242, 183, 5, 0.55) 0%, rgba(242, 183, 5, 0) 72%);
+  background: radial-gradient(
+    circle,
+    rgba(242, 183, 5, 0.55) 0%,
+    rgba(242, 183, 5, 0) 72%
+  );
 }
 
 .facility-dot--warehouse .facility-dot__glow {
-  background: radial-gradient(circle, rgba(69, 196, 176, 0.5) 0%, rgba(69, 196, 176, 0) 72%);
+  background: radial-gradient(
+    circle,
+    rgba(69, 196, 176, 0.5) 0%,
+    rgba(69, 196, 176, 0) 72%
+  );
 }
 
 .facility-dot__core {
@@ -1143,13 +1281,27 @@ button {
 }
 
 .facility-dot--shelter .facility-dot__core {
-  background: radial-gradient(circle at 32% 28%, #ffe38a 0%, var(--accent) 58%, #c48a00 100%);
-  box-shadow: 0 0 10px rgba(242, 183, 5, 0.95), 0 2px 6px rgba(0, 0, 0, 0.35);
+  background: radial-gradient(
+    circle at 32% 28%,
+    #ffe38a 0%,
+    var(--accent) 58%,
+    #c48a00 100%
+  );
+  box-shadow:
+    0 0 10px rgba(242, 183, 5, 0.95),
+    0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 .facility-dot--warehouse .facility-dot__core {
-  background: radial-gradient(circle at 32% 28%, #b8fff4 0%, #45c4b0 58%, #1f8a7c 100%);
-  box-shadow: 0 0 10px rgba(69, 196, 176, 0.95), 0 2px 6px rgba(0, 0, 0, 0.35);
+  background: radial-gradient(
+    circle at 32% 28%,
+    #b8fff4 0%,
+    #45c4b0 58%,
+    #1f8a7c 100%
+  );
+  box-shadow:
+    0 0 10px rgba(69, 196, 176, 0.95),
+    0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 .facility-dot__spark {
@@ -1168,7 +1320,7 @@ button {
   background: var(--panel-alt);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 6px;
+  border-radius: var(--glass-r-md);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
   font-family: var(--font-body);
   padding: 6px 9px;
@@ -1300,8 +1452,12 @@ button {
 .table-wrap {
   overflow-x: auto;
   overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-r-md);
+  background: var(--glass-bg-light);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
@@ -1336,8 +1492,12 @@ button {
   width: 100%;
   border-collapse: collapse;
   min-width: 100%;
-  background: var(--panel);
+  background: transparent;
   table-layout: fixed;
+}
+
+.data-table th {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .data-table th,
@@ -1383,7 +1543,8 @@ button {
 }
 
 .data-table:has(td > .btn-danger):not(:has(td .button-row)) th:last-child,
-.data-table:has(td > .btn-danger):not(:has(td .button-row)) td:has(> .btn-danger) {
+.data-table:has(td > .btn-danger):not(:has(td .button-row))
+  td:has(> .btn-danger) {
   width: 96px;
   min-width: 96px;
   max-width: 96px;
@@ -1422,8 +1583,11 @@ button {
 
 /* Checkbox lists */
 .checkbox-list {
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-r-sm);
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
   margin-bottom: 16px;
   max-height: 190px;
   display: flex;
@@ -1508,8 +1672,7 @@ button {
   align-items: center;
   justify-content: space-between;
   padding: 18px 32px;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .topbar--end {
@@ -1633,7 +1796,10 @@ button {
 .team-card {
   animation: cardReveal 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
   animation-delay: calc(var(--i, 0) * 0.07s + 0.1s);
-  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  transition:
+    transform 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
 }
 
 .team-card:hover {
@@ -1698,8 +1864,9 @@ button {
 .member-chip {
   display: block;
   padding: 6px 10px;
-  background: var(--panel-alt);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(234, 242, 241, 0.08);
+  border-radius: var(--glass-r-sm);
   font-size: 12px;
   transition: background 0.15s ease;
 }
@@ -1721,7 +1888,7 @@ button {
 }
 
 .team-volunteer-list {
-  border-radius: 6px;
+  border-radius: var(--glass-r-md);
   background: var(--panel-alt);
   max-height: 220px;
   transition: border-color 0.2s ease;
@@ -1733,7 +1900,9 @@ button {
 
 .team-volunteer-list .checkbox-row {
   cursor: pointer;
-  transition: background 0.18s ease, padding-left 0.18s ease;
+  transition:
+    background 0.18s ease,
+    padding-left 0.18s ease;
 }
 
 .team-volunteer-list .checkbox-row:hover {
@@ -1751,7 +1920,9 @@ button {
 }
 
 .team-submit {
-  transition: transform 0.15s ease, filter 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    filter 0.15s ease;
 }
 
 .team-submit:hover:not(:disabled) {
@@ -1773,8 +1944,7 @@ button {
 }
 
 .admin-sidebar {
-  background: var(--panel);
-  border-right: 1px solid var(--border);
+  border-right: 1px solid var(--glass-border);
   display: flex;
   flex-direction: column;
   min-height: calc(100vh - 57px);
@@ -1856,11 +2026,13 @@ button {
   border-radius: 10px;
   cursor: pointer;
   overflow: hidden;
-  transition: color 0.2s ease, background 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
 }
 
 .tab-btn::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 8px;
@@ -1889,13 +2061,18 @@ button {
 }
 
 .tab-btn.active::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   z-index: 0;
   width: 34%;
   border-radius: inherit;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.18),
+    transparent
+  );
   transform: translateX(-140%) skewX(-18deg);
   pointer-events: none;
   animation: glassShimmer 4.5s ease-in-out infinite;
@@ -2073,10 +2250,18 @@ button {
     padding: 9px 8px;
     font-size: 12px;
   }
-  .relief-table col:nth-child(1) { width: 56px !important; }
-  .relief-table col:nth-child(3) { width: 102px !important; }
-  .relief-table col:nth-child(5) { width: 96px !important; }
-  .relief-table col:nth-child(6) { width: 128px !important; }
+  .relief-table col:nth-child(1) {
+    width: 56px !important;
+  }
+  .relief-table col:nth-child(3) {
+    width: 102px !important;
+  }
+  .relief-table col:nth-child(5) {
+    width: 96px !important;
+  }
+  .relief-table col:nth-child(6) {
+    width: 128px !important;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .tab-btn.active::after {
