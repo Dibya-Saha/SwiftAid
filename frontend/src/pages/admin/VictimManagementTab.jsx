@@ -32,6 +32,28 @@ export default function VictimManagementTab() {
     return (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
   }
 
+  const occupiedByShelter = (() => {
+    const counts = {};
+    for (const victim of victims) {
+      if (victim.shelter_id == null || victim.shelter_id === '') continue;
+      // Exclude the victim being edited so its own shelter stays selectable while re-saving.
+      if (editingId && String(victim.victim_id) === String(editingId)) continue;
+      const key = String(victim.shelter_id);
+      counts[key] = (counts[key] || 0) + 1;
+    }
+    return counts;
+  })();
+
+  const shelterOptions = [{ value: '', label: 'Unassigned' }, ...shelters.map((shelter) => {
+    const occupied = occupiedByShelter[String(shelter.shelter_id)] || 0;
+    const remaining = Math.max(Number(shelter.capacity) - occupied, 0);
+    return {
+      value: shelter.shelter_id,
+      label: `${shelter.name} — ${remaining} remaining`,
+      disabled: remaining <= 0,
+    };
+  })];
+
   function startEdit(victim) {
     setEditingId(victim.victim_id);
     setForm({
@@ -100,7 +122,7 @@ export default function VictimManagementTab() {
             <div className="field"><label>Status</label><Select value={form.status} onChange={updateField('status')} options={[{ value: 'registered', label: 'Registered' }, { value: 'relocated', label: 'Relocated' }]} /></div>
             <div className="field"><label>Disaster</label><Select required value={form.disaster_id} onChange={updateField('disaster_id')} placeholder="Select disaster" options={[{ value: '', label: 'Select disaster' }, ...disasters.map((disaster) => ({ value: disaster.disaster_id, label: disaster.title }))]} /></div>
           </div>
-          <div className="field"><label>Shelter (optional)</label><Select value={form.shelter_id} onChange={updateField('shelter_id')} placeholder="Unassigned" options={[{ value: '', label: 'Unassigned' }, ...shelters.map((shelter) => ({ value: shelter.shelter_id, label: `${shelter.name} (${shelter.capacity} capacity)` }))]} /></div>
+          <div className="field"><label>Shelter (optional)</label><Select value={form.shelter_id} onChange={updateField('shelter_id')} placeholder="Unassigned" options={shelterOptions} /></div>
           <div className="button-row"><button type="submit" className="btn-primary">{editingId ? 'Update victim' : 'Register victim'}</button>{editingId && <button type="button" className="btn-ghost" onClick={resetForm}>Cancel</button>}</div>
         </form>
       </div>
