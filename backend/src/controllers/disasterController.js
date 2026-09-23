@@ -79,28 +79,46 @@ async function updateDisasterStatus(req, res) {
         return res.status(400).json({ message: `status must be one of: ${statuses.join(', ')}` });
     }
 
+    const client = await pool.connect();
     try {
-        const result = await pool.query(
+        await client.query('BEGIN');
+        const result = await client.query(
             UPDATE_DISASTER_STATUS,
             [status, req.params.id]
         );
-        if (!result.rows[0]) return res.status(404).json({ message: 'Disaster not found' });
+        if (!result.rows[0]) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: 'Disaster not found' });
+        }
+        await client.query('COMMIT');
         return res.json({ disaster: result.rows[0] });
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('[disasters/status] error:', err);
         return res.status(500).json({ message: 'Failed to update disaster status' });
+    } finally {
+        client.release();
     }
 }
 
 // DELETE /api/disasters/:id (archive)
 async function archiveDisaster(req, res) {
+    const client = await pool.connect();
     try {
-        const result = await pool.query(DELETE_DISASTER, [req.params.id]);
-        if (!result.rows[0]) return res.status(404).json({ message: 'Disaster not found' });
+        await client.query('BEGIN');
+        const result = await client.query(DELETE_DISASTER, [req.params.id]);
+        if (!result.rows[0]) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: 'Disaster not found' });
+        }
+        await client.query('COMMIT');
         return res.json({ message: 'Disaster archived' });
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('[disasters/archive] error:', err);
         return res.status(500).json({ message: 'Failed to archive disaster' });
+    } finally {
+        client.release();
     }
 }
 

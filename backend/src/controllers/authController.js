@@ -39,25 +39,31 @@ async function register(req, res) {
     return res.status(400).json({ message: 'password must be at least 6 characters' });
   }
 
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
     const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
 
-    const result = await pool.query(
+    const result = await client.query(
       INSERT_USER,
       [full_name, email, password_hash, role, phone || null]
     );
 
+    await client.query('COMMIT');
     const user = result.rows[0];
     const token = signToken(user);
 
     return res.status(201).json({ user, token });
   } catch (err) {
+    await client.query('ROLLBACK');
     // 23505 = unique_violation (email or phone already taken)
     if (err.code === '23505') {
       return res.status(409).json({ message: 'Email or phone is already registered' });
     }
     console.error('[auth/register] error:', err);
     return res.status(500).json({ message: 'Could not create account' });
+  } finally {
+    client.release();
   }
 }
 
@@ -90,10 +96,17 @@ async function login(req, res) {
     // Upgrade legacy plaintext passwords after a successful login.
     if (!isBcryptHash(user.password_hash)) {
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-      await pool.query(UPDATE_PASSWORD_HASH, [
-        passwordHash,
-        user.user_id,
-      ]);
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(UPDATE_PASSWORD_HASH, [passwordHash, user.user_id]);
+        await client.query('COMMIT');
+      } catch (updateError) {
+        await client.query('ROLLBACK');
+        throw updateError;
+      } finally {
+        client.release();
+      }
     }
 
     const { password_hash, ...safeUser } = user;

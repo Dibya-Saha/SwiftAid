@@ -155,25 +155,33 @@ async function reviewTeam(req, res) {
 
 async function leaveTeam(req, res) {
   const { id } = req.params;
+  const client = await pool.connect();
   try {
-    const result = await pool.query(
+    await client.query('BEGIN');
+    const result = await client.query(
       DELETE_MEMBER_ROW,
       [id, req.user.user_id]
     );
     if (!result.rows[0]) {
-      const isLeader = await pool.query(
+      const isLeader = await client.query(
         LEADER_ROW_BY_TEAM,
         [id, req.user.user_id]
       );
       if (isLeader.rowCount) {
+        await client.query('ROLLBACK');
         return res.status(409).json({ message: 'Team leaders cannot resign. Disband the team instead' });
       }
+      await client.query('ROLLBACK');
       return res.status(404).json({ message: 'You are not a member of this team' });
     }
+    await client.query('COMMIT');
     return res.json({ message: 'You have resigned from the team' });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('[teams/leave] error:', err);
     return res.status(500).json({ message: 'Failed to resign from team' });
+  } finally {
+    client.release();
   }
 }
 

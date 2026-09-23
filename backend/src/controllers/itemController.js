@@ -51,12 +51,18 @@ async function createItem(req, res) {
   const validationError = validateItemInput(input);
   if (validationError) return res.status(400).json({ message: validationError });
 
+  const client = await pool.connect();
   try {
-    const result = await pool.query(INSERT_ITEM, [input.name, input.category || null, input.unit]);
+    await client.query('BEGIN');
+    const result = await client.query(INSERT_ITEM, [input.name, input.category || null, input.unit]);
+    await client.query('COMMIT');
     return res.status(201).json({ item: result.rows[0] });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('[items/create] error:', err);
     return res.status(500).json({ message: 'Failed to create item' });
+  } finally {
+    client.release();
   }
 }
 
@@ -65,27 +71,45 @@ async function updateItem(req, res) {
   const validationError = validateItemInput(input);
   if (validationError) return res.status(400).json({ message: validationError });
 
+  const client = await pool.connect();
   try {
-    const result = await pool.query(UPDATE_ITEM, [input.name, input.category || null, input.unit, req.params.id]);
-    if (!result.rows[0]) return res.status(404).json({ message: 'Item not found' });
+    await client.query('BEGIN');
+    const result = await client.query(UPDATE_ITEM, [input.name, input.category || null, input.unit, req.params.id]);
+    if (!result.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Item not found' });
+    }
+    await client.query('COMMIT');
     return res.json({ item: result.rows[0] });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('[items/update] error:', err);
     return res.status(500).json({ message: 'Failed to update item' });
+  } finally {
+    client.release();
   }
 }
 
 async function deleteItem(req, res) {
+  const client = await pool.connect();
   try {
-    const result = await pool.query(DELETE_ITEM, [req.params.id]);
-    if (!result.rows[0]) return res.status(404).json({ message: 'Item not found' });
+    await client.query('BEGIN');
+    const result = await client.query(DELETE_ITEM, [req.params.id]);
+    if (!result.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Item not found' });
+    }
+    await client.query('COMMIT');
     return res.json({ message: 'Item archived' });
   } catch (err) {
+    await client.query('ROLLBACK');
     if (err.code === '23503') {
       return res.status(409).json({ message: 'Item cannot be archived because another record references it' });
     }
     console.error('[items/delete] error:', err);
     return res.status(500).json({ message: 'Failed to delete item' });
+  } finally {
+    client.release();
   }
 }
 
