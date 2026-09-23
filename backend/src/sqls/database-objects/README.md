@@ -56,3 +56,9 @@ Live path: called by updateDistributionStatus in distributionController.js; the 
 Records a donor's warehouse donation atomically: validates the warehouse and every item, inserts the donation rows, adds the quantities to warehouse inventory, and returns the created donation ids so the caller can read back the exact rows.
 
 Live path: called by createDonation in donationController.js; the controller keeps payload validation, donor authentication, and HTTP responses. Migration: 024_record_donation_procedure.sql.
+
+## 10. Trigger — shelterInventoryAuditSqls.js
+
+Every insert, quantity update, or delete on shelter stock is written to the shadow table shelter_inventory_audit_log so no shelter stock movement goes untracked, mirroring the warehouse inventory audit.
+
+Live path: fires automatically on every shelter inventory change. Migration: 025_shelter_inventory_audit_trigger.sql.

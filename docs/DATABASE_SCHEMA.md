@@ -393,6 +393,12 @@ All database objects are grouped for inspection in
   validates the warehouse and every item, inserts the donation rows, and adds
   the quantities to warehouse inventory atomically, returning the created
   donation ids. Called by `createDonation` in `donationController.js`.
+- **Trigger:** `trg_shelter_inventory_audit` (`025`, inspectable in
+  `backend/src/sqls/database-objects/shelterInventoryAuditSqls.js`) fires
+  `AFTER INSERT OR UPDATE OR DELETE` on `shelter_inventory` and logs every
+  change to the shadow table `shelter_inventory_audit_log`, distinguishing
+  `INSERT`, `UPDATE`, and `DELETE` events. Used for audit/history of sensitive
+  shelter stock movements.
 - **Complex queries (multi-table and/or aggregation):** `LIST_RELIEF_REQUESTS`
   (joins + `SUM`/`COUNT`/`json_agg` item summaries), `LIST_DISTRIBUTIONS`
   (four-table join + `json_agg` items), and `LIST_VICTIMS` (correlated
@@ -425,3 +431,4 @@ Run migrations in numeric order after the base schema:
 22. `022_request_summary_function.sql` — adds `request_summary()` request-totals function
 23. `023_deliver_distribution_procedure.sql` — adds `deliver_distribution()` atomic delivery procedure
 24. `024_record_donation_procedure.sql` — adds `record_donation()` atomic donation procedure
+25. `025_shelter_inventory_audit_trigger.sql` — installs the shelter inventory audit trigger
