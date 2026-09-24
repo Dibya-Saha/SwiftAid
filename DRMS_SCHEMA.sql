@@ -93,14 +93,6 @@ CREATE TABLE team_members (
   member_role VARCHAR (40),
   UNIQUE (team_id, user_id)
 );
-CREATE TABLE relief_requests (
-  request_id SERIAL PRIMARY KEY,
-  shelter_id INT NOT NULL REFERENCES shelters (shelter_id),
-  requested_by_admin_id INT NOT NULL REFERENCES users (user_id),
-  status VARCHAR (20),
-  requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
- 
 CREATE TABLE relief_requests(
     request_id SERIAL PRIMARY KEY,
     shelter_id INT NOT NULL REFERENCES shelters(shelter_id) ON DELETE CASCADE,

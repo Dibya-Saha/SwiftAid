@@ -16,6 +16,7 @@ const LIST_VICTIMS = `SELECT
         SELECT COUNT(*)
         FROM victims occupied
         WHERE occupied.shelter_id = s.shelter_id
+          AND occupied.archived_at IS NULL
       ) >= s.capacity THEN 'full'
       ELSE 'available'
     END AS shelter_availability
