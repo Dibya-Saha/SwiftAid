@@ -1,12 +1,3 @@
-const FIND_LOCATION = `SELECT location_id FROM locations
-  WHERE division = $1 AND district = $2
-    AND upazila IS NOT DISTINCT FROM $3
-    AND union_name IS NOT DISTINCT FROM $4
-  LIMIT 1`;
-
-const INSERT_LOCATION = `INSERT INTO locations (division, district, upazila, union_name)
-  VALUES ($1, $2, $3, $4) RETURNING location_id`;
-
 const INSERT_DISASTER = `INSERT INTO disasters (title, status, start_date, created_by_admin_id, latitude, longitude)
   VALUES ($1, 'ACTIVE', CURRENT_DATE, $2, $3, $4)
   RETURNING disaster_id, title, status, start_date, latitude, longitude`;
@@ -36,8 +27,6 @@ const DELETE_DISASTER = `UPDATE disasters SET archived_at = CURRENT_TIMESTAMP
   RETURNING disaster_id`;
 
 module.exports = {
-  FIND_LOCATION,
-  INSERT_LOCATION,
   INSERT_DISASTER,
   INSERT_DISASTER_LOCATION,
   LIST_DISASTERS,

@@ -62,3 +62,9 @@ Live path: called by createDonation in donationController.js; the controller kee
 Every insert, quantity update, or delete on shelter stock is written to the shadow table shelter_inventory_audit_log so no shelter stock movement goes untracked, mirroring the warehouse inventory audit.
 
 Live path: fires automatically on every shelter inventory change. Migration: 025_shelter_inventory_audit_trigger.sql.
+
+## 11. Function — locationSqls.js
+
+Returns an existing location ID or creates the administrative location when it does not exist. This removes the repeated lookup-then-insert logic from shelter, warehouse, and disaster creation while remaining inside each controller's existing transaction.
+
+Live path: called by the shelter, warehouse, and disaster controllers. Migration: 026_get_or_create_location.sql.

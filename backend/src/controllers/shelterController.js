@@ -1,7 +1,5 @@
 const pool = require('../db');
 const {
-  FIND_LOCATION,
-  INSERT_LOCATION,
   LIST_SHELTERS,
   GET_SHELTER,
   INSERT_SHELTER,
@@ -9,6 +7,7 @@ const {
   DELETE_SHELTER,
   REJECT_SHELTER_REQUESTS,
 } = require('../sqls/shelterSqls');
+const { GET_OR_CREATE_LOCATION } = require('../sqls/locationSqls');
 
 function readShelterInput(body) {
   const { name, address, capacity, division, district, upazila, union: unionName, union_name } = body;
@@ -39,16 +38,13 @@ function validateShelterInput(input) {
 }
 
 async function resolveLocation(client, input) {
-  const values = [
+  const result = await client.query(GET_OR_CREATE_LOCATION, [
     input.division,
     input.district,
     input.upazila || null,
     input.unionName || null,
-  ];
-  const existing = await client.query(FIND_LOCATION, values);
-  if (existing.rows[0]) return existing.rows[0].location_id;
-  const created = await client.query(INSERT_LOCATION, values);
-  return created.rows[0].location_id;
+  ]);
+  return result.rows[0].location_id;
 }
 
 async function listShelters(req, res) {

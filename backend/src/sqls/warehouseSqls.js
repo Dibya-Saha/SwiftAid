@@ -1,13 +1,3 @@
-const FIND_LOCATION = `SELECT location_id FROM locations
-  WHERE division = $1 AND district = $2
-    AND upazila IS NOT DISTINCT FROM $3
-    AND union_name IS NOT DISTINCT FROM $4
-  LIMIT 1`;
-
-const INSERT_LOCATION = `INSERT INTO locations (division, district, upazila, union_name)
-  VALUES ($1, $2, $3, $4)
-  RETURNING location_id`;
-
 const LIST_WAREHOUSES = `SELECT
     w.warehouse_id, w.name, w.admin_id,
     l.location_id, l.division, l.district, l.upazila, l.union_name,
@@ -39,8 +29,6 @@ const DELETE_WAREHOUSE = `UPDATE warehouses SET archived_at = CURRENT_TIMESTAMP
   RETURNING warehouse_id`;
 
 module.exports = {
-  FIND_LOCATION,
-  INSERT_LOCATION,
   LIST_WAREHOUSES,
   GET_WAREHOUSE,
   INSERT_WAREHOUSE,

@@ -1,13 +1,12 @@
 const pool = require('../db');
 const {
-  FIND_LOCATION,
-  INSERT_LOCATION,
   LIST_WAREHOUSES,
   GET_WAREHOUSE,
   INSERT_WAREHOUSE,
   UPDATE_WAREHOUSE,
   DELETE_WAREHOUSE,
 } = require('../sqls/warehouseSqls');
+const { GET_OR_CREATE_LOCATION } = require('../sqls/locationSqls');
 
 function readWarehouseInput(body) {
   const { name, division, district, upazila, union: unionName, union_name } = body;
@@ -33,11 +32,13 @@ function validateWarehouseInput(input) {
 }
 
 async function resolveLocation(client, input) {
-  const values = [input.division, input.district, input.upazila || null, input.unionName || null];
-  const existing = await client.query(FIND_LOCATION, values);
-  if (existing.rows[0]) return existing.rows[0].location_id;
-  const created = await client.query(INSERT_LOCATION, values);
-  return created.rows[0].location_id;
+  const result = await client.query(GET_OR_CREATE_LOCATION, [
+    input.division,
+    input.district,
+    input.upazila || null,
+    input.unionName || null,
+  ]);
+  return result.rows[0].location_id;
 }
 
 async function listWarehouses(req, res) {

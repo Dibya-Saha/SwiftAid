@@ -399,6 +399,11 @@ All database objects are grouped for inspection in
   change to the shadow table `shelter_inventory_audit_log`, distinguishing
   `INSERT`, `UPDATE`, and `DELETE` events. Used for audit/history of sensitive
   shelter stock movements.
+- **Function:** `get_or_create_location(division, district, upazila, union_name)`
+  (`026`, inspectable in
+  `backend/src/sqls/database-objects/locationSqls.js`) returns an existing
+  administrative location ID or creates the location when it does not exist.
+  It is called by shelter, warehouse, and disaster creation/update flows.
 - **Complex queries (multi-table and/or aggregation):** `LIST_RELIEF_REQUESTS`
   (joins + `SUM`/`COUNT`/`json_agg` item summaries), `LIST_DISTRIBUTIONS`
   (four-table join + `json_agg` items), and `LIST_VICTIMS` (correlated
@@ -432,3 +437,4 @@ Run migrations in numeric order after the base schema:
 23. `023_deliver_distribution_procedure.sql` — adds `deliver_distribution()` atomic delivery procedure
 24. `024_record_donation_procedure.sql` — adds `record_donation()` atomic donation procedure
 25. `025_shelter_inventory_audit_trigger.sql` — installs the shelter inventory audit trigger
+26. `026_get_or_create_location.sql` — centralizes administrative location lookup and creation

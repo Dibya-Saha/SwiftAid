@@ -1,13 +1,12 @@
 const pool = require('../db');
 const {
-  FIND_LOCATION,
-  INSERT_LOCATION,
-  INSERT_DISASTER,
+    INSERT_DISASTER,
   INSERT_DISASTER_LOCATION,
   LIST_DISASTERS,
   UPDATE_DISASTER_STATUS,
   DELETE_DISASTER,
 } = require('../sqls/disasterSqls');
+const { GET_OR_CREATE_LOCATION } = require('../sqls/locationSqls');
 
 // POST /api/disasters
 async function createDisaster(req, res) {
@@ -26,15 +25,10 @@ async function createDisaster(req, res) {
         try {
             await client.query('BEGIN');
             const locationResult = await client.query(
-                FIND_LOCATION,
+                GET_OR_CREATE_LOCATION,
                 [division, district, upazila || null, unionName || union_name || null]
             );
-            const locationId = locationResult.rows[0]?.location_id || (
-                await client.query(
-                    INSERT_LOCATION,
-                    [division, district, upazila || null, unionName || union_name || null]
-                )
-            ).rows[0].location_id;
+            const locationId = locationResult.rows[0].location_id;
 
             const disasterResult = await client.query(
                 INSERT_DISASTER,

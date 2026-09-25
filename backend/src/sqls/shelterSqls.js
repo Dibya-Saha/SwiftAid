@@ -1,13 +1,3 @@
-const FIND_LOCATION = `SELECT location_id FROM locations
-  WHERE division = $1 AND district = $2
-    AND upazila IS NOT DISTINCT FROM $3
-    AND union_name IS NOT DISTINCT FROM $4
-  LIMIT 1`;
-
-const INSERT_LOCATION = `INSERT INTO locations (division, district, upazila, union_name)
-  VALUES ($1, $2, $3, $4)
-  RETURNING location_id`;
-
 const LIST_SHELTERS = `SELECT
     s.shelter_id, s.name, s.address, s.capacity, s.admin_id,
     l.location_id, l.division, l.district, l.upazila, l.union_name,
@@ -45,8 +35,6 @@ const REJECT_SHELTER_REQUESTS = `UPDATE relief_requests SET status = 'rejected'
     AND LOWER(status) IN ('waiting_stock', 'approved', 'partially_fulfilled')`;
 
 module.exports = {
-  FIND_LOCATION,
-  INSERT_LOCATION,
   LIST_SHELTERS,
   GET_SHELTER,
   INSERT_SHELTER,
