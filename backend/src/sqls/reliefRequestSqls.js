@@ -49,11 +49,6 @@ const GET_REQUEST_ITEMS = `SELECT
 
 const FIND_RELIEF_REQUEST = 'SELECT request_id, status FROM relief_requests WHERE request_id = $1';
 
-const FIND_REQUEST_SHELTER_ACTIVE = `SELECT s.shelter_id
-  FROM relief_requests rr
-  JOIN shelters s ON s.shelter_id = rr.shelter_id AND s.archived_at IS NULL
-  WHERE rr.request_id = $1`;
-
 const UPDATE_REQUEST_STATUS = `UPDATE relief_requests SET status = $2 WHERE request_id = $1
   RETURNING request_id, shelter_id, requested_by_admin_id, status, requested_at`;
 
@@ -90,21 +85,17 @@ const GET_ELIGIBLE_REQUEST_ITEMS = `SELECT
     AND ri.quantity_requested > ri.quantity_dispatched
   ORDER BY ri.request_item_id ASC`;
 
-// Lock queries for transactional donate
-const LOCK_RELIEF_REQUEST = 'SELECT request_id, shelter_id, status FROM relief_requests WHERE request_id = $1 FOR UPDATE';
-const LOCK_REQUEST_ITEM = 'SELECT request_item_id, request_id, item_id, quantity_requested, quantity_dispatched FROM request_items WHERE request_id = $1 AND item_id = $2 FOR UPDATE';
-const LOCK_REQUEST_ITEMS_ALL = 'SELECT request_item_id, quantity_requested, quantity_dispatched FROM request_items WHERE request_id = $1 FOR UPDATE';
-const UPDATE_DISPATCHED_INCREMENT = `UPDATE request_items SET quantity_dispatched = quantity_dispatched + $3
-  WHERE request_item_id = $1 AND request_id = $2
-  RETURNING request_item_id, request_id, item_id, quantity_requested, quantity_dispatched`;
-const CREATE_DONATION_FOR_REQUEST = `INSERT INTO donations (donor_id, shelter_id, request_id, item_id, quantity)
-  VALUES ($1, $2, $3, $4, $5)
-  RETURNING donation_id, donor_id, shelter_id, request_id, item_id, quantity, donated_at`;
-const UPSERT_SHELTER_INVENTORY_TX = `INSERT INTO shelter_inventory (shelter_id, item_id, quantity)
-  VALUES ($1, $2, $3)
-  ON CONFLICT (shelter_id, item_id)
-  DO UPDATE SET quantity = shelter_inventory.quantity + EXCLUDED.quantity
-  RETURNING shelter_inventory_id, shelter_id, item_id, quantity`;
+// Reads back rows written by CALL donate_to_request($1, $2, $3) in creation
+// order, joining each donation to its updated request item and shelter stock.
+const GET_CREATED_REQUEST_DONATIONS = `SELECT d.donation_id, d.donor_id,
+    d.shelter_id, d.request_id, d.item_id, d.quantity, d.donated_at,
+    ri.request_item_id, ri.quantity_requested, ri.quantity_dispatched,
+    si.shelter_inventory_id, si.quantity AS shelter_quantity
+  FROM donations d
+  JOIN request_items ri ON ri.request_id = d.request_id AND ri.item_id = d.item_id
+  JOIN shelter_inventory si ON si.shelter_id = d.shelter_id AND si.item_id = d.item_id
+  WHERE d.donation_id = ANY($1)
+  ORDER BY d.donation_id`;
 
 module.exports = {
   FIND_SHELTER,
@@ -115,17 +106,11 @@ module.exports = {
   GET_RELIEF_REQUEST,
   GET_REQUEST_ITEMS,
   FIND_RELIEF_REQUEST,
-  FIND_REQUEST_SHELTER_ACTIVE,
   UPDATE_REQUEST_STATUS,
   FIND_REQUEST_ITEM,
   FIND_REQUEST_ITEM_BY_ITEM,
   UPDATE_DISPATCHED,
   LIST_ELIGIBLE_REQUESTS,
   GET_ELIGIBLE_REQUEST_ITEMS,
-  LOCK_RELIEF_REQUEST,
-  LOCK_REQUEST_ITEM,
-  LOCK_REQUEST_ITEMS_ALL,
-  UPDATE_DISPATCHED_INCREMENT,
-  CREATE_DONATION_FOR_REQUEST,
-  UPSERT_SHELTER_INVENTORY_TX,
+  GET_CREATED_REQUEST_DONATIONS,
 };

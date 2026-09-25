@@ -404,6 +404,14 @@ All database objects are grouped for inspection in
   `backend/src/sqls/database-objects/locationSqls.js`) returns an existing
   administrative location ID or creates the location when it does not exist.
   It is called by shelter, warehouse, and disaster creation/update flows.
+- **Procedure:** `donate_to_request(request_id, donor_id, items, donation_ids)`
+  (`027`, inspectable in
+  `backend/src/sqls/database-objects/donateToRequestProcedureSqls.js`)
+  validates the request and every item, inserts the donation rows, counts the
+  quantities as dispatched, and adds them to shelter inventory atomically,
+  returning the created donation ids; the sync trigger advances the parent
+  request. Called by `donateToReliefRequest` in `reliefRequestController.js`
+  (`POST /relief-requests/:id/donate`, donor role).
 - **Complex queries (multi-table and/or aggregation):** `LIST_RELIEF_REQUESTS`
   (joins + `SUM`/`COUNT`/`json_agg` item summaries), `LIST_DISTRIBUTIONS`
   (four-table join + `json_agg` items), and `LIST_VICTIMS` (correlated
@@ -438,3 +446,4 @@ Run migrations in numeric order after the base schema:
 24. `024_record_donation_procedure.sql` — adds `record_donation()` atomic donation procedure
 25. `025_shelter_inventory_audit_trigger.sql` — installs the shelter inventory audit trigger
 26. `026_get_or_create_location.sql` — centralizes administrative location lookup and creation
+27. `027_donate_to_request_procedure.sql` — adds `donate_to_request()` atomic request-donation procedure

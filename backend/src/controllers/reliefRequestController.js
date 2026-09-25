@@ -8,21 +8,16 @@ const {
   GET_RELIEF_REQUEST,
   GET_REQUEST_ITEMS,
   FIND_RELIEF_REQUEST,
-  FIND_REQUEST_SHELTER_ACTIVE,
   UPDATE_REQUEST_STATUS,
   FIND_REQUEST_ITEM,
   FIND_REQUEST_ITEM_BY_ITEM,
   UPDATE_DISPATCHED,
   LIST_ELIGIBLE_REQUESTS,
   GET_ELIGIBLE_REQUEST_ITEMS,
-  LOCK_RELIEF_REQUEST,
-  LOCK_REQUEST_ITEM,
-  LOCK_REQUEST_ITEMS_ALL,
-  UPDATE_DISPATCHED_INCREMENT,
-  CREATE_DONATION_FOR_REQUEST,
-  UPSERT_SHELTER_INVENTORY_TX,
+  GET_CREATED_REQUEST_DONATIONS,
 } = require("../sqls/reliefRequestSqls");
 const procedureSql = require("../sqls/database-objects/dispatchUpdateProcedureSqls");
+const donateProcedureSql = require("../sqls/database-objects/donateToRequestProcedureSqls");
 
 const ALLOWED_STATUSES = [
   "waiting_stock",
@@ -259,125 +254,98 @@ async function donateToReliefRequest(req, res) {
   try {
     await client.query("BEGIN");
 
-    const lockedReq = await client.query(LOCK_RELIEF_REQUEST, [requestId]);
-    if (!lockedReq.rows[0]) {
+    const existing = await client.query(FIND_RELIEF_REQUEST, [requestId]);
+    if (!existing.rows[0]) {
       await client.query("ROLLBACK");
       return res.status(404).json({ message: "Relief request not found" });
     }
-    const rr = lockedReq.rows[0];
-    const shelterActive = await client.query(FIND_REQUEST_SHELTER_ACTIVE, [
-      requestId,
-    ]);
-    if (!shelterActive.rows[0]) {
+    const previousStatus = String(existing.rows[0].status || "").toLowerCase();
+
+    // Request/item validation, donation inserts, dispatched increments, and
+    // shelter inventory updates run atomically inside the database procedure.
+    // The status-sync trigger advances the parent request automatically.
+    let donationIds = [];
+    try {
+      const callResult = await client.query(
+        donateProcedureSql.CALL_DONATE_TO_REQUEST,
+        [requestId, donorId, JSON.stringify(itemsToDonate)],
+      );
+      donationIds = callResult.rows[0].p_donation_ids || [];
+    } catch (procedureErr) {
+      const procedureMessage = String(procedureErr.message || "");
       await client.query("ROLLBACK");
-      return res
-        .status(400)
-        .json({
+      if (procedureMessage.includes("REQUEST_NOT_FOUND"))
+        return res.status(404).json({ message: "Relief request not found" });
+      if (procedureMessage.includes("SHELTER_ARCHIVED"))
+        return res.status(400).json({
           message: "Cannot donate to a request for an archived shelter",
         });
-    }
-    const statusLower = String(rr.status || "waiting_stock").toLowerCase();
-    if (statusLower === "rejected") {
-      await client.query("ROLLBACK");
-      return res
-        .status(400)
-        .json({ message: "Cannot donate to a rejected request" });
-    }
-    if (statusLower === "fulfilled") {
-      await client.query("ROLLBACK");
-      return res
-        .status(400)
-        .json({ message: "Cannot donate to a fulfilled request" });
-    }
-
-    const shelterId = rr.shelter_id;
-    const createdDonations = [];
-    const updatedItems = [];
-    const shelterInventories = [];
-
-    for (const { item_id, quantity } of itemsToDonate) {
-      const lockedItem = await client.query(LOCK_REQUEST_ITEM, [
-        requestId,
-        item_id,
-      ]);
-      if (!lockedItem.rows[0]) {
-        await client.query("ROLLBACK");
-        return res
-          .status(404)
-          .json({ message: `Request item not found for item_id: ${item_id}` });
-      }
-      const ri = lockedItem.rows[0];
-      const remaining = ri.quantity_requested - ri.quantity_dispatched;
-      if (remaining <= 0) {
-        await client.query("ROLLBACK");
+      if (procedureMessage.includes("REQUEST_REJECTED"))
         return res
           .status(400)
-          .json({ message: `Item ${item_id} has no remaining shortage` });
-      }
-      if (quantity > remaining) {
-        await client.query("ROLLBACK");
+          .json({ message: "Cannot donate to a rejected request" });
+      if (procedureMessage.includes("REQUEST_FULFILLED"))
         return res
           .status(400)
-          .json({
-            message: `Donation quantity ${quantity} exceeds remaining ${remaining} for item ${item_id}`,
-          });
-      }
-
-      const donationRes = await client.query(CREATE_DONATION_FOR_REQUEST, [
-        donorId,
-        shelterId,
-        requestId,
-        item_id,
-        quantity,
-      ]);
-      createdDonations.push(donationRes.rows[0]);
-
-      const updRes = await client.query(UPDATE_DISPATCHED_INCREMENT, [
-        ri.request_item_id,
-        requestId,
-        quantity,
-      ]);
-      updatedItems.push(updRes.rows[0]);
-
-      const invRes = await client.query(UPSERT_SHELTER_INVENTORY_TX, [
-        shelterId,
-        item_id,
-        quantity,
-      ]);
-      shelterInventories.push(invRes.rows[0]);
+          .json({ message: "Cannot donate to a fulfilled request" });
+      const missingItem = procedureMessage.match(/REQUEST_ITEM_NOT_FOUND:(\d+)/);
+      if (missingItem)
+        return res.status(404).json({
+          message: `Request item not found for item_id: ${missingItem[1]}`,
+        });
+      const noRemaining = procedureMessage.match(/ITEM_NO_REMAINING:(\d+)/);
+      if (noRemaining)
+        return res.status(400).json({
+          message: `Item ${noRemaining[1]} has no remaining shortage`,
+        });
+      const exceeds = procedureMessage.match(
+        /QUANTITY_EXCEEDS_REMAINING:(\d+):(\d+):(\d+)/,
+      );
+      if (exceeds)
+        return res.status(400).json({
+          message: `Donation quantity ${exceeds[2]} exceeds remaining ${exceeds[3]} for item ${exceeds[1]}`,
+        });
+      throw procedureErr;
     }
 
-    // Check fulfillment: all items fulfilled?
-    const allItems = await client.query(LOCK_REQUEST_ITEMS_ALL, [requestId]);
-    const allFulfilled = allItems.rows.every(
-      (r) => r.quantity_dispatched >= r.quantity_requested,
-    );
-    const someDispatched = allItems.rows.some((r) => r.quantity_dispatched > 0);
-    let fulfilledStatus = null;
-    if (allFulfilled) {
-      const upd = await client.query(UPDATE_REQUEST_STATUS, [
-        requestId,
-        "fulfilled",
-      ]);
-      fulfilledStatus = upd.rows[0].status;
-    } else if (
-      someDispatched &&
-      String(rr.status).toLowerCase() !== "partially_fulfilled"
-    ) {
-      const upd = await client.query(UPDATE_REQUEST_STATUS, [
-        requestId,
-        "partially_fulfilled",
-      ]);
-      fulfilledStatus = upd.rows[0].status;
-    }
-
+    const created = (
+      await client.query(GET_CREATED_REQUEST_DONATIONS, [donationIds])
+    ).rows;
+    const finalStatus = String(
+      (await client.query(FIND_RELIEF_REQUEST, [requestId])).rows[0].status ||
+        "",
+    ).toLowerCase();
     await client.query("COMMIT");
+
+    const donations = created.map((row) => ({
+      donation_id: row.donation_id,
+      donor_id: row.donor_id,
+      shelter_id: row.shelter_id,
+      request_id: row.request_id,
+      item_id: row.item_id,
+      quantity: row.quantity,
+      donated_at: row.donated_at,
+    }));
+    const updatedItems = created.map((row) => ({
+      request_item_id: row.request_item_id,
+      request_id: row.request_id,
+      item_id: row.item_id,
+      quantity_requested: row.quantity_requested,
+      quantity_dispatched: row.quantity_dispatched,
+    }));
+    const shelterInventories = created.map((row) => ({
+      shelter_inventory_id: row.shelter_inventory_id,
+      shelter_id: row.shelter_id,
+      item_id: row.item_id,
+      quantity: row.shelter_quantity,
+    }));
+
     return res.status(201).json({
-      donations: createdDonations,
+      donations,
       updated_items: updatedItems,
       shelter_inventories: shelterInventories,
-      fulfilled: allFulfilled,
-      status: fulfilledStatus,
+      fulfilled: finalStatus === "fulfilled",
+      status: finalStatus === previousStatus ? null : finalStatus,
     });
   } catch (err) {
     await client.query("ROLLBACK");

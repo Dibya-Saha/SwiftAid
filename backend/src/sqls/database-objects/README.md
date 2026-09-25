@@ -68,3 +68,9 @@ Live path: fires automatically on every shelter inventory change. Migration: 025
 Returns an existing location ID or creates the administrative location when it does not exist. This removes the repeated lookup-then-insert logic from shelter, warehouse, and disaster creation while remaining inside each controller's existing transaction.
 
 Live path: called by the shelter, warehouse, and disaster controllers. Migration: 026_get_or_create_location.sql.
+
+## 12. Procedure — donateToRequestProcedureSqls.js
+
+Donates items to a relief request atomically: validates the request and every item, inserts the donation rows, counts the quantities as dispatched, and adds them to shelter inventory. The status-sync trigger advances the parent request.
+
+Live path: called by donateToReliefRequest in reliefRequestController.js (POST /relief-requests/:id/donate, donor role); the controller keeps donor authentication, payload validation, and HTTP responses. Migration: 027_donate_to_request_procedure.sql.
