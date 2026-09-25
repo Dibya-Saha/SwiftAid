@@ -5,7 +5,7 @@ const {
   LIST_DONATIONS,
   GET_DONATION,
 } = require('../sqls/donationSqls');
-const donationProcedureSql = require('../sqls/database-objects/recordDonationProcedureSqls');
+const donationProcedureSql = require('../sqls/database-objects/procedure.recordDonation.sqls');
 
 function integer(value) {
   const parsed = Number(value);

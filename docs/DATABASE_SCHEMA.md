@@ -346,67 +346,67 @@ All database objects are grouped for inspection in
 `backend/src/sqls/database-objects/` (see its `README.md`).
 
 - **Trigger:** `trg_inventory_audit` (`014`, inspectable in
-  `backend/src/sqls/database-objects/inventoryAuditSqls.js`) fires
+  `backend/src/sqls/database-objects/trigger.inventoryAudit.sqls.js`) fires
   `AFTER INSERT OR UPDATE OR DELETE` on `inventory` and logs every change to
   the shadow table `inventory_audit_log`, distinguishing `INSERT`, `UPDATE`,
   `ARCHIVE`, and `DELETE` events. Used for audit/history of sensitive stock
   movements.
 - **Function:** `shelter_remaining_capacity(shelter_id)` (`016`, inspectable in
-  `backend/src/sqls/database-objects/shelterCapacitySqls.js`) returns remaining
+  `backend/src/sqls/database-objects/function.shelterCapacity.sqls.js`) returns remaining
   beds as `capacity − active victims`. It is called inside `LIST_SHELTERS` /
   `GET_SHELTER` and powers the victim-registration shelter dropdown.
 - **Procedure:** `set_dispatched(...)` (`017`, inspectable in
-  `backend/src/sqls/database-objects/dispatchUpdateProcedureSqls.js`) sets a
+  `backend/src/sqls/database-objects/procedure.dispatchUpdate.sqls.js`) sets a
   request item's dispatched quantity and advances the request to
   `partially_fulfilled`/`fulfilled` atomically across `request_items` and
   `relief_requests`. Called by `updateDispatchedQuantity` in
   `reliefRequestController.js` whenever dispatched quantities are saved.
 - **Function:** `request_item_available(request_item_id)` (`019`, inspectable in
-  `backend/src/sqls/database-objects/requestAvailabilitySqls.js`) returns units
+  `backend/src/sqls/database-objects/function.requestAvailability.sqls.js`) returns units
   still free for new assignments as `requested − dispatched − active assigned`
   (distributions that are neither `delivered` nor `cancelled`). It is called
   inside `GET_REQUEST_ITEMS` and the distribution-assignment check, and backs
   the transfer cap in the admin distribution form.
 - **Trigger:** `trg_validate_request_item_dispatched` (`020`, inspectable in
-  `backend/src/sqls/database-objects/requestItemValidationTriggerSqls.js`)
+  `backend/src/sqls/database-objects/trigger.requestItemValidation.sqls.js`)
   fires `BEFORE INSERT OR UPDATE` on `request_items` and rejects dispatched
   quantities above the requested quantity, even when the change bypasses the
   application.
 - **Trigger:** `trg_sync_relief_request_status` (`021`, inspectable in
-  `backend/src/sqls/database-objects/requestStatusSyncTriggerSqls.js`) fires
+  `backend/src/sqls/database-objects/trigger.requestStatusSync.sqls.js`) fires
   `AFTER UPDATE OF quantity_dispatched` on `request_items` and moves the parent
   request to `fulfilled`/`partially_fulfilled`, replacing the status computation
   previously done in the delivery controller.
 - **Function:** `request_summary(request_id)` (`022`, inspectable in
-  `backend/src/sqls/database-objects/requestSummarySqls.js`) returns one
+  `backend/src/sqls/database-objects/function.requestSummary.sqls.js`) returns one
   request's total requested, dispatched, and remaining units in a single call.
   It backs `total_requested`/`total_remaining` in `LIST_RELIEF_REQUESTS`.
 - **Procedure:** `deliver_distribution(distribution_id)` (`023`, inspectable in
-  `backend/src/sqls/database-objects/deliverDistributionProcedureSqls.js`)
+  `backend/src/sqls/database-objects/procedure.deliverDistribution.sqls.js`)
   moves every item into shelter stock, counts it as dispatched, and stamps the
   distribution `delivered` atomically; the sync trigger advances the parent
   request. Called by `updateDistributionStatus` in
   `distributionController.js`.
 - **Procedure:** `record_donation(donor_id, warehouse_id, items, donation_ids)`
   (`024`, inspectable in
-  `backend/src/sqls/database-objects/recordDonationProcedureSqls.js`)
+  `backend/src/sqls/database-objects/procedure.recordDonation.sqls.js`)
   validates the warehouse and every item, inserts the donation rows, and adds
   the quantities to warehouse inventory atomically, returning the created
   donation ids. Called by `createDonation` in `donationController.js`.
 - **Trigger:** `trg_shelter_inventory_audit` (`025`, inspectable in
-  `backend/src/sqls/database-objects/shelterInventoryAuditSqls.js`) fires
+  `backend/src/sqls/database-objects/trigger.shelterInventoryAudit.sqls.js`) fires
   `AFTER INSERT OR UPDATE OR DELETE` on `shelter_inventory` and logs every
   change to the shadow table `shelter_inventory_audit_log`, distinguishing
   `INSERT`, `UPDATE`, and `DELETE` events. Used for audit/history of sensitive
   shelter stock movements.
 - **Function:** `get_or_create_location(division, district, upazila, union_name)`
   (`026`, inspectable in
-  `backend/src/sqls/database-objects/locationSqls.js`) returns an existing
+  `backend/src/sqls/database-objects/function.getOrCreateLocation.sqls.js`) returns an existing
   administrative location ID or creates the location when it does not exist.
   It is called by shelter, warehouse, and disaster creation/update flows.
 - **Procedure:** `donate_to_request(request_id, donor_id, items, donation_ids)`
   (`027`, inspectable in
-  `backend/src/sqls/database-objects/donateToRequestProcedureSqls.js`)
+  `backend/src/sqls/database-objects/procedure.donateToRequest.sqls.js`)
   validates the request and every item, inserts the donation rows, counts the
   quantities as dispatched, and adds them to shelter inventory atomically,
   returning the created donation ids; the sync trigger advances the parent
@@ -433,7 +433,7 @@ Run migrations in numeric order after the base schema:
 11. `011_facility_coordinates.sql` — adds validated map coordinates to shelters and warehouses
 12. `012_disaster_coordinates.sql` — adds validated map coordinates to disasters
 13. `013_disaster_archive.sql` — archives disasters via `archived_at`, preserving victim history
-14. `014_inventory_audit_trigger.sql` — installs the audit trigger; the inspectable SQL is in `backend/src/sqls/inventoryAuditSqls.js`
+14. `014_inventory_audit_trigger.sql` — installs the audit trigger; the inspectable SQL is in `backend/src/sqls/database-objects/trigger.inventoryAudit.sqls.js`
 15. `015_fix_inventory_audit_action_types.sql` — allows `ARCHIVE` audit events on existing databases
 16. `016_shelter_capacity_function.sql` — adds `shelter_remaining_capacity()` computed function
 17. `017_remove_pending_request_status.sql` — folds stranded `pending` relief requests into `waiting_stock`

@@ -16,8 +16,8 @@ const {
   GET_ELIGIBLE_REQUEST_ITEMS,
   GET_CREATED_REQUEST_DONATIONS,
 } = require("../sqls/reliefRequestSqls");
-const procedureSql = require("../sqls/database-objects/dispatchUpdateProcedureSqls");
-const donateProcedureSql = require("../sqls/database-objects/donateToRequestProcedureSqls");
+const procedureSql = require("../sqls/database-objects/procedure.dispatchUpdate.sqls");
+const donateProcedureSql = require("../sqls/database-objects/procedure.donateToRequest.sqls");
 
 const ALLOWED_STATUSES = [
   "waiting_stock",

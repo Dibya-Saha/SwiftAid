@@ -1,6 +1,6 @@
 const pool = require("../db");
 const sql = require("../sqls/distributionSqls");
-const deliverSql = require("../sqls/database-objects/deliverDistributionProcedureSqls");
+const deliverSql = require("../sqls/database-objects/procedure.deliverDistribution.sqls");
 
 function integer(value) {
   const parsed = Number(value);
