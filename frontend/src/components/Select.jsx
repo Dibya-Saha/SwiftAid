@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 function ChevronIcon() {
   return (
@@ -22,8 +23,11 @@ export default function Select({
   const generatedId = useId();
   const selectId = id || generatedId;
   const rootRef = useRef(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [menuStyle, setMenuStyle] = useState(null);
 
   const normalizedOptions = options.map((option) => (
     typeof option === 'string' ? { value: option, label: option } : { ...option }
@@ -48,24 +52,64 @@ export default function Select({
   function selectOption(option) {
     if (option.disabled) return;
     emitChange(String(option.value));
-    // ensure menu collapses immediately after selection even if parent re-renders
     setOpen(false);
     setActiveIndex(-1);
   }
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuStyle(null);
+      return undefined;
+    }
+
+    function positionMenu() {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const width = rect.width;
+      const maxHeight = variant === 'pill' ? 200 : 240;
+      const spaceBelow = window.innerHeight - rect.bottom - 8;
+      const spaceAbove = rect.top - 8;
+      const rowEstimate = variant === 'pill' ? 30 : 36;
+      const openUp = spaceBelow < Math.min(maxHeight, 36 + normalizedOptions.length * rowEstimate) && spaceAbove > spaceBelow;
+      const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
+      const next = {
+        position: 'fixed',
+        left,
+        width,
+        zIndex: 4000,
+        maxHeight,
+      };
+      if (openUp) {
+        next.bottom = window.innerHeight - rect.top + 6;
+        next.top = 'auto';
+      } else {
+        next.top = rect.bottom + 6;
+        next.bottom = 'auto';
+      }
+      setMenuStyle(next);
+    }
+
+    positionMenu();
+    window.addEventListener('resize', positionMenu);
+    window.addEventListener('scroll', positionMenu, true);
+    return () => {
+      window.removeEventListener('resize', positionMenu);
+      window.removeEventListener('scroll', positionMenu, true);
+    };
+  }, [open, variant, normalizedOptions.length, value]);
 
   useEffect(() => {
     if (!open) return undefined;
 
     function handlePointerDown(event) {
-      if (!rootRef.current?.contains(event.target)) {
-        closeMenu();
-      }
+      const target = event.target;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      closeMenu();
     }
 
     function handleEscape(event) {
-      if (event.key === 'Escape') {
-        closeMenu();
-      }
+      if (event.key === 'Escape') closeMenu();
     }
 
     document.addEventListener('mousedown', handlePointerDown);
@@ -77,14 +121,6 @@ export default function Select({
       document.removeEventListener('keydown', handleEscape);
     };
   }, [open]);
-
-  // collapse popup as soon as value changes while open (covers parent-driven re-renders)
-  useEffect(() => {
-    if (open) {
-      // keep menu open for keyboard nav, but ensure click path already closed via selectOption
-      // no-op: value change alone should not reopen
-    }
-  }, [value, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -112,7 +148,6 @@ export default function Select({
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       let next = (activeIndex + 1) % normalizedOptions.length;
-      // skip disabled
       for (let i = 0; i < normalizedOptions.length; i++) {
         if (!normalizedOptions[next]?.disabled) break;
         next = (next + 1) % normalizedOptions.length;
@@ -144,12 +179,50 @@ export default function Select({
 
   const isPlaceholder = !selectedOption;
 
+  const menu = (
+    <ul
+      ref={menuRef}
+      className={`select-menu select-menu--portal ${open ? 'select-menu--open' : ''} ${variant === 'pill' ? 'select-menu--pill' : ''}`.trim()}
+      role="listbox"
+      aria-labelledby={selectId}
+      tabIndex={-1}
+      style={menuStyle || undefined}
+      onKeyDown={handleListKeyDown}
+    >
+      {normalizedOptions.map((option, index) => {
+        const isSelected = String(option.value) === String(value);
+        const isActive = index === activeIndex;
+        const isDisabled = Boolean(option.disabled);
+
+        return (
+          <li
+            key={`${option.value}-${option.label}`}
+            role="option"
+            aria-selected={isSelected}
+            aria-disabled={isDisabled ? 'true' : undefined}
+            className={`select-option ${isSelected ? 'select-option--selected' : ''} ${isActive ? 'select-option--active' : ''} ${isDisabled ? 'select-option--disabled' : ''}`}
+            onMouseEnter={() => !isDisabled && setActiveIndex(index)}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              if (!isDisabled) selectOption(option);
+            }}
+          >
+            {option.label}
+          </li>
+        );
+      })}
+    </ul>
+  );
+
   return (
     <div
       ref={rootRef}
       className={`select-control select-control--${variant} ${open ? 'select-control--open' : ''} ${className}`.trim()}
     >
       <button
+        ref={triggerRef}
         id={selectId}
         type="button"
         className="select-trigger"
@@ -165,38 +238,7 @@ export default function Select({
         <span className="select-chevron"><ChevronIcon /></span>
       </button>
 
-      <ul
-        className={`select-menu ${open ? 'select-menu--open' : ''}`}
-        role="listbox"
-        aria-labelledby={selectId}
-        tabIndex={-1}
-        onKeyDown={handleListKeyDown}
-      >
-        {normalizedOptions.map((option, index) => {
-          const isSelected = String(option.value) === String(value);
-          const isActive = index === activeIndex;
-          const isDisabled = Boolean(option.disabled);
-
-          return (
-            <li
-              key={`${option.value}-${option.label}`}
-              role="option"
-              aria-selected={isSelected}
-              aria-disabled={isDisabled ? 'true' : undefined}
-              className={`select-option ${isSelected ? 'select-option--selected' : ''} ${isActive ? 'select-option--active' : ''} ${isDisabled ? 'select-option--disabled' : ''}`}
-              onMouseEnter={() => !isDisabled && setActiveIndex(index)}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                if (!isDisabled) selectOption(option);
-              }}
-            >
-              {option.label}
-            </li>
-          );
-        })}
-      </ul>
+      {open && menuStyle && (typeof document !== 'undefined' ? createPortal(menu, document.body) : menu)}
 
       {required && (
         <input

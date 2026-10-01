@@ -9,6 +9,7 @@ export default function VictimManagementTab() {
   const [disasters, setDisasters] = useState([]);
   const [shelters, setShelters] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [editingShelterId, setEditingShelterId] = useState('');
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
@@ -32,8 +33,28 @@ export default function VictimManagementTab() {
     return (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
   }
 
+  // Authoritative remaining beds from shelter_remaining_capacity(); falls back
+  // to total capacity when the backend value is absent.
+  const shelterOptions = [{ value: '', label: 'Unassigned' }, ...shelters.map((shelter) => {
+    const backendRemaining = Number(shelter.remaining_capacity);
+    let remaining = Number.isFinite(backendRemaining)
+      ? backendRemaining
+      : Math.max(Number(shelter.capacity) || 0, 0);
+    // The victim being edited already occupies a bed in its original shelter,
+    // so credit it back to keep that shelter selectable while re-saving.
+    if (editingId && editingShelterId !== '' && String(editingShelterId) === String(shelter.shelter_id)) {
+      remaining = Math.min(remaining + 1, Number(shelter.capacity) || remaining + 1);
+    }
+    return {
+      value: shelter.shelter_id,
+      label: `${shelter.name} — ${remaining} remaining`,
+      disabled: remaining <= 0,
+    };
+  })];
+
   function startEdit(victim) {
     setEditingId(victim.victim_id);
+    setEditingShelterId(victim.shelter_id || '');
     setForm({
       full_name: victim.full_name || '',
       date_of_birth: victim.date_of_birth ? String(victim.date_of_birth).slice(0, 10) : '',
@@ -48,6 +69,7 @@ export default function VictimManagementTab() {
 
   function resetForm() {
     setEditingId(null);
+    setEditingShelterId('');
     setForm(EMPTY_VICTIM);
   }
 
@@ -100,7 +122,7 @@ export default function VictimManagementTab() {
             <div className="field"><label>Status</label><Select value={form.status} onChange={updateField('status')} options={[{ value: 'registered', label: 'Registered' }, { value: 'relocated', label: 'Relocated' }]} /></div>
             <div className="field"><label>Disaster</label><Select required value={form.disaster_id} onChange={updateField('disaster_id')} placeholder="Select disaster" options={[{ value: '', label: 'Select disaster' }, ...disasters.map((disaster) => ({ value: disaster.disaster_id, label: disaster.title }))]} /></div>
           </div>
-          <div className="field"><label>Shelter (optional)</label><Select value={form.shelter_id} onChange={updateField('shelter_id')} placeholder="Unassigned" options={[{ value: '', label: 'Unassigned' }, ...shelters.map((shelter) => ({ value: shelter.shelter_id, label: `${shelter.name} (${shelter.capacity} capacity)` }))]} /></div>
+          <div className="field"><label>Shelter (optional)</label><Select value={form.shelter_id} onChange={updateField('shelter_id')} placeholder="Unassigned" options={shelterOptions} /></div>
           <div className="button-row"><button type="submit" className="btn-primary">{editingId ? 'Update victim' : 'Register victim'}</button>{editingId && <button type="button" className="btn-ghost" onClick={resetForm}>Cancel</button>}</div>
         </form>
       </div>

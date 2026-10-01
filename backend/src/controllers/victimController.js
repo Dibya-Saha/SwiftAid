@@ -150,13 +150,22 @@ async function updateVictim(req, res) {
 }
 
 async function deleteVictim(req, res) {
+  const client = await pool.connect();
   try {
-    const result = await pool.query(DELETE_VICTIM, [req.params.id]);
-    if (!result.rows[0]) return res.status(404).json({ message: 'Victim not found' });
+    await client.query('BEGIN');
+    const result = await client.query(DELETE_VICTIM, [req.params.id]);
+    if (!result.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Victim not found' });
+    }
+    await client.query('COMMIT');
     return res.json({ message: 'Victim archived' });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('[victims/delete] error:', err);
     return res.status(500).json({ message: 'Failed to delete victim' });
+  } finally {
+    client.release();
   }
 }
 

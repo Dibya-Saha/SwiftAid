@@ -1,38 +1,38 @@
 const pool = require('../db');
 const {
-  FIND_LOCATION,
-  INSERT_LOCATION,
-  INSERT_DISASTER,
+    INSERT_DISASTER,
   INSERT_DISASTER_LOCATION,
   LIST_DISASTERS,
   UPDATE_DISASTER_STATUS,
+  DELETE_DISASTER,
 } = require('../sqls/disasterSqls');
+const { GET_OR_CREATE_LOCATION } = require('../sqls/locationSqls');
 
 // POST /api/disasters
 async function createDisaster(req, res) {
     const { title, division, district, upazila, union: unionName, union_name } = req.body;
+    const latitude = req.body.latitude === '' || req.body.latitude === undefined ? null : Number(req.body.latitude);
+    const longitude = req.body.longitude === '' || req.body.longitude === undefined ? null : Number(req.body.longitude);
     try {
         if (!title || !division || !district) {
             return res.status(400).json({ message: 'Title, division, and district are required' });
+        }
+        if ((latitude === null) !== (longitude === null) || (latitude !== null && (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180))) {
+            return res.status(400).json({ message: 'Latitude and longitude must be valid coordinates provided together' });
         }
 
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
             const locationResult = await client.query(
-                FIND_LOCATION,
+                GET_OR_CREATE_LOCATION,
                 [division, district, upazila || null, unionName || union_name || null]
             );
-            const locationId = locationResult.rows[0]?.location_id || (
-                await client.query(
-                    INSERT_LOCATION,
-                    [division, district, upazila || null, unionName || union_name || null]
-                )
-            ).rows[0].location_id;
+            const locationId = locationResult.rows[0].location_id;
 
             const disasterResult = await client.query(
                 INSERT_DISASTER,
-                [title, req.user.user_id]
+                [title, req.user.user_id, latitude, longitude]
             );
             const disaster = disasterResult.rows[0];
 
@@ -73,17 +73,47 @@ async function updateDisasterStatus(req, res) {
         return res.status(400).json({ message: `status must be one of: ${statuses.join(', ')}` });
     }
 
+    const client = await pool.connect();
     try {
-        const result = await pool.query(
+        await client.query('BEGIN');
+        const result = await client.query(
             UPDATE_DISASTER_STATUS,
             [status, req.params.id]
         );
-        if (!result.rows[0]) return res.status(404).json({ message: 'Disaster not found' });
+        if (!result.rows[0]) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: 'Disaster not found' });
+        }
+        await client.query('COMMIT');
         return res.json({ disaster: result.rows[0] });
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('[disasters/status] error:', err);
         return res.status(500).json({ message: 'Failed to update disaster status' });
+    } finally {
+        client.release();
     }
 }
 
-module.exports = { createDisaster, listDisasters, updateDisasterStatus };
+// DELETE /api/disasters/:id (archive)
+async function archiveDisaster(req, res) {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const result = await client.query(DELETE_DISASTER, [req.params.id]);
+        if (!result.rows[0]) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: 'Disaster not found' });
+        }
+        await client.query('COMMIT');
+        return res.json({ message: 'Disaster archived' });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('[disasters/archive] error:', err);
+        return res.status(500).json({ message: 'Failed to archive disaster' });
+    } finally {
+        client.release();
+    }
+}
+
+module.exports = { createDisaster, listDisasters, updateDisasterStatus, archiveDisaster };

@@ -18,7 +18,10 @@ CREATE TABLE disasters (
   title VARCHAR (150) NOT NULL,
   status VARCHAR (30) CHECK (status IN ('ACTIVE', 'ONGOING', 'RESOLVED', 'CLOSED')),
   start_date DATE NOT NULL,
-  created_by_admin_id INT NOT NULL REFERENCES users (user_id)
+  created_by_admin_id INT NOT NULL REFERENCES users (user_id),
+  latitude NUMERIC(9,6),
+  longitude NUMERIC(9,6),
+  archived_at TIMESTAMP
 );
 CREATE TABLE disaster_locations (
   disaster_id INT REFERENCES disasters (disaster_id) ON DELETE CASCADE,
@@ -33,7 +36,9 @@ CREATE TABLE shelters(
     capacity INT NOT NULL CHECK(capacity>0),
     admin_id INT REFERENCES users(user_id),
     location_id INT NOT NULL REFERENCES locations(location_id),
-    archived_at TIMESTAMP
+    archived_at TIMESTAMP,
+    latitude NUMERIC(9,6),
+    longitude NUMERIC(9,6)
 );
  
 CREATE TABLE warehouses(
@@ -41,7 +46,9 @@ CREATE TABLE warehouses(
     name VARCHAR(100) NOT NULL,
     admin_id INT REFERENCES users(user_id),
     location_id INT NOT NULL REFERENCES locations(location_id),
-    archived_at TIMESTAMP
+    archived_at TIMESTAMP,
+    latitude NUMERIC(9,6),
+    longitude NUMERIC(9,6)
 );
  
 CREATE TABLE items(
@@ -86,14 +93,6 @@ CREATE TABLE team_members (
   member_role VARCHAR (40),
   UNIQUE (team_id, user_id)
 );
-CREATE TABLE relief_requests (
-  request_id SERIAL PRIMARY KEY,
-  shelter_id INT NOT NULL REFERENCES shelters (shelter_id),
-  requested_by_admin_id INT NOT NULL REFERENCES users (user_id),
-  status VARCHAR (20),
-  requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
- 
 CREATE TABLE relief_requests(
     request_id SERIAL PRIMARY KEY,
     shelter_id INT NOT NULL REFERENCES shelters(shelter_id) ON DELETE CASCADE,

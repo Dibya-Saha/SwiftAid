@@ -203,7 +203,6 @@ function DonateTab({ onDonated }) {
     <>
       <div className="info-card module-card" style={{ marginBottom: 16 }}>
         <p className="eyebrow">Current warehouse stock</p>
-        <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>All warehouses — low stock highlighted. Donate where needed most. <span style={{ color: 'var(--text)' }}>LOW ≤10</span></p>
         <div style={{ marginTop: 12, maxWidth: 300 }}>
           <Select value={filterWarehouse} onChange={(e) => setFilterWarehouse(e.target.value)} placeholder="All warehouses" options={[{ value: '', label: 'All warehouses' }, ...warehouses.map((w) => ({ value: String(w.warehouse_id), label: w.name }))]} />
         </div>
@@ -223,7 +222,7 @@ function DonateTab({ onDonated }) {
       {neediest.length > 0 && (
         <section className="module-section">
           <div className="section-heading"><div><div className="eyebrow">Highest need</div><h2>Neediest relief requests</h2></div><span className="count-badge">{neediest.length} shown</span></div>
-          <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 8 }}>Sorted by total remaining (requested − dispatched). Donating these items helps most.</p>
+         
           <div className="table-wrap"><table className="data-table"><thead><tr><th>Request</th><th>Shelter</th><th>Needed items</th><th>Total remaining</th></tr></thead><tbody>{neediest.map((r) => {
             const summary = parseSummary(r);
             return <tr key={r.request_id}><td>#{r.request_id} <small className="status-badge" style={{ marginLeft: 6 }}>{r.status}</small></td><td>{r.shelter_name}</td><td><div className="member-list" style={{ flexWrap: 'wrap' }}>{summary.map((it, idx) => <span key={idx} className="member-chip">{it.item_name} {it.remaining} {it.unit} needed<small style={{ marginLeft: 4, opacity: 0.8 }}>req {it.quantity_requested}</small></span>)}</div></td><td><strong>{r.total_remaining}</strong></td></tr>;
@@ -233,16 +232,6 @@ function DonateTab({ onDonated }) {
 
       <div className="module-section">
       <h3 className="section-heading">Donate supplies</h3>
-      <p
-        style={{
-          color: "var(--text-muted)",
-          marginBottom: "1rem",
-          fontSize: "0.9rem",
-        }}
-      >
-        Select one warehouse and add multiple items. Duplicates are merged
-        automatically. New inventory rows are created if none exists.
-      </p>
       {error && <div className="error-banner">{error}</div>}
       {success && <div className="success-banner">{success}</div>}
       {warehouses.length === 0 && (

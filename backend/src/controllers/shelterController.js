@@ -1,13 +1,13 @@
 const pool = require('../db');
 const {
-  FIND_LOCATION,
-  INSERT_LOCATION,
   LIST_SHELTERS,
   GET_SHELTER,
   INSERT_SHELTER,
   UPDATE_SHELTER,
   DELETE_SHELTER,
+  REJECT_SHELTER_REQUESTS,
 } = require('../sqls/shelterSqls');
+const { GET_OR_CREATE_LOCATION } = require('../sqls/locationSqls');
 
 function readShelterInput(body) {
   const { name, address, capacity, division, district, upazila, union: unionName, union_name } = body;
@@ -19,6 +19,8 @@ function readShelterInput(body) {
     district: typeof district === 'string' ? district.trim() : '',
     upazila: typeof upazila === 'string' ? upazila.trim() : '',
     unionName: typeof (unionName || union_name) === 'string' ? (unionName || union_name).trim() : '',
+    latitude: body.latitude === '' || body.latitude === undefined ? null : Number(body.latitude),
+    longitude: body.longitude === '' || body.longitude === undefined ? null : Number(body.longitude),
   };
 }
 
@@ -29,20 +31,20 @@ function validateShelterInput(input) {
   if (!Number.isInteger(input.capacity) || input.capacity <= 0) {
     return 'Capacity must be a positive integer';
   }
+  if ((input.latitude === null) !== (input.longitude === null) || !Number.isFinite(input.latitude) || !Number.isFinite(input.longitude) || input.latitude < -90 || input.latitude > 90 || input.longitude < -180 || input.longitude > 180) {
+    return 'Latitude and longitude must be valid coordinates provided together';
+  }
   return null;
 }
 
 async function resolveLocation(client, input) {
-  const values = [
+  const result = await client.query(GET_OR_CREATE_LOCATION, [
     input.division,
     input.district,
     input.upazila || null,
     input.unionName || null,
-  ];
-  const existing = await client.query(FIND_LOCATION, values);
-  if (existing.rows[0]) return existing.rows[0].location_id;
-  const created = await client.query(INSERT_LOCATION, values);
-  return created.rows[0].location_id;
+  ]);
+  return result.rows[0].location_id;
 }
 
 async function listShelters(req, res) {
@@ -81,6 +83,8 @@ async function createShelter(req, res) {
       input.capacity,
       req.user.user_id,
       locationId,
+      input.latitude,
+      input.longitude,
     ]);
     await client.query('COMMIT');
     return res.status(201).json({ shelter: { ...result.rows[0], location_id: locationId } });
@@ -107,6 +111,8 @@ async function updateShelter(req, res) {
       input.address || null,
       input.capacity,
       locationId,
+      input.latitude,
+      input.longitude,
       req.params.id,
       req.user.user_id,
     ]);
@@ -126,14 +132,26 @@ async function updateShelter(req, res) {
 }
 
 async function deleteShelter(req, res) {
+  const client = await pool.connect();
   try {
-    const result = await pool.query(DELETE_SHELTER, [req.params.id, req.user.user_id]);
-    if (!result.rows[0]) return res.status(404).json({ message: 'Shelter not found' });
-    return res.json({ message: 'Shelter archived' });
+    await client.query('BEGIN');
+    const result = await client.query(DELETE_SHELTER, [req.params.id, req.user.user_id]);
+    if (!result.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Shelter not found' });
+    }
+    // Stranded open requests can never be fulfilled once their shelter is
+    // gone, so close them in the same transaction instead of orphaning them.
+    const rejected = await client.query(REJECT_SHELTER_REQUESTS, [req.params.id]);
+    await client.query('COMMIT');
+    return res.json({ message: 'Shelter archived', rejected_requests: rejected.rowCount });
   } catch (err) {
+    await client.query('ROLLBACK');
     if (err.code === '23503') return res.status(409).json({ message: 'Shelter cannot be deleted because another record references it' });
     console.error('[shelters/delete] error:', err);
     return res.status(500).json({ message: 'Failed to delete shelter' });
+  } finally {
+    client.release();
   }
 }
 

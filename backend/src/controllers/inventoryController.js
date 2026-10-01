@@ -78,13 +78,22 @@ async function adjustInventory(req, res) {
 }
 
 async function deleteInventory(req, res) {
+  const client = await pool.connect();
   try {
-    const result = await pool.query(DELETE_INVENTORY, [req.params.id]);
-    if (!result.rows[0]) return res.status(404).json({ message: 'Inventory record not found' });
+    await client.query('BEGIN');
+    const result = await client.query(DELETE_INVENTORY, [req.params.id]);
+    if (!result.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Inventory record not found' });
+    }
+    await client.query('COMMIT');
     return res.json({ message: 'Inventory record archived' });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('[inventory/delete] error:', err);
     return res.status(500).json({ message: 'Failed to delete inventory record' });
+  } finally {
+    client.release();
   }
 }
 

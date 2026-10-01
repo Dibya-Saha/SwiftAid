@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
-import { fetchWarehouses, createWarehouse, updateWarehouse, deleteWarehouse } from '../../utils/api';
+import { fetchShelters, fetchWarehouses, createWarehouse, updateWarehouse, deleteWarehouse } from '../../utils/api';
 import { EMPTY_WAREHOUSE } from './adminConstants';
+import LocationPicker from '../../components/LocationPicker';
+import FacilityOverviewMap from '../../components/FacilityOverviewMap';
 
 export default function WarehouseManagementTab() {
   const [form, setForm] = useState(EMPTY_WAREHOUSE);
   const [warehouses, setWarehouses] = useState([]);
+  const [shelters, setShelters] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
   async function refreshWarehouses() {
-    const { warehouses: rows } = await fetchWarehouses();
-    setWarehouses(rows);
+    const [{ warehouses: warehouseRows }, { shelters: shelterRows }] = await Promise.all([fetchWarehouses(), fetchShelters()]);
+    setWarehouses(warehouseRows || []);
+    setShelters(shelterRows || []);
   }
 
   useEffect(() => {
@@ -25,6 +29,11 @@ export default function WarehouseManagementTab() {
     return (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
   }
 
+  function handleAutoFill(filled) {
+    const { address, ...locationFields } = filled;
+    setForm((current) => ({ ...current, ...locationFields }));
+  }
+
   function startEdit(warehouse) {
     setEditingId(warehouse.warehouse_id);
     setForm({
@@ -33,6 +42,8 @@ export default function WarehouseManagementTab() {
       district: warehouse.district || '',
       upazila: warehouse.upazila || '',
       union: warehouse.union_name || '',
+      latitude: warehouse.latitude ?? '',
+      longitude: warehouse.longitude ?? '',
     });
     setMessage('');
   }
@@ -85,12 +96,15 @@ export default function WarehouseManagementTab() {
             <div className="field"><label>Upazila</label><input value={form.upazila} onChange={updateField('upazila')} /></div>
             <div className="field"><label>Union</label><input value={form.union} onChange={updateField('union')} /></div>
           </div>
+          <LocationPicker latitude={form.latitude} longitude={form.longitude} onChange={(coordinates) => setForm((current) => ({ ...current, ...coordinates }))} onAutoFill={handleAutoFill} />
           <div className="button-row">
             <button type="submit" className="btn-primary">{editingId ? 'Update warehouse' : 'Create warehouse'}</button>
             {editingId && <button type="button" className="btn-ghost" onClick={resetForm}>Cancel</button>}
           </div>
         </form>
       </div>
+
+      <FacilityOverviewMap shelters={shelters} warehouses={warehouses} />
 
       <section className="module-section">
         <div className="section-heading">

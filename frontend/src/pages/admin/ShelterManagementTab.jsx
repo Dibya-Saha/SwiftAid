@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
-import { fetchShelters, createShelter, updateShelter, deleteShelter } from '../../utils/api';
+import { fetchShelters, fetchWarehouses, createShelter, updateShelter, deleteShelter } from '../../utils/api';
 import { EMPTY_SHELTER } from './adminConstants';
+import LocationPicker from '../../components/LocationPicker';
+import FacilityOverviewMap from '../../components/FacilityOverviewMap';
 
 export default function ShelterManagementTab() {
   const [form, setForm] = useState(EMPTY_SHELTER);
   const [shelters, setShelters] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
   async function refreshShelters() {
-    const { shelters: rows } = await fetchShelters();
-    setShelters(rows);
+    const [{ shelters: shelterRows }, { warehouses: warehouseRows }] = await Promise.all([fetchShelters(), fetchWarehouses()]);
+    setShelters(shelterRows || []);
+    setWarehouses(warehouseRows || []);
   }
 
   useEffect(() => {
@@ -25,6 +29,10 @@ export default function ShelterManagementTab() {
     return (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
   }
 
+  function handleAutoFill(filled) {
+    setForm((current) => ({ ...current, ...filled }));
+  }
+
   function startEdit(shelter) {
     setEditingId(shelter.shelter_id);
     setForm({
@@ -35,6 +43,8 @@ export default function ShelterManagementTab() {
       district: shelter.district || '',
       upazila: shelter.upazila || '',
       union: shelter.union_name || '',
+      latitude: shelter.latitude ?? '',
+      longitude: shelter.longitude ?? '',
     });
     setMessage('');
   }
@@ -84,6 +94,7 @@ export default function ShelterManagementTab() {
             <div className="field"><label>Shelter name</label><input required value={form.name} onChange={updateField('name')} placeholder="North Valley Shelter" /></div>
             <div className="field"><label>Capacity</label><input required type="number" min="1" value={form.capacity} onChange={updateField('capacity')} placeholder="250" /></div>
           </div>
+          <LocationPicker latitude={form.latitude} longitude={form.longitude} onChange={(coordinates) => setForm((current) => ({ ...current, ...coordinates }))} onAutoFill={handleAutoFill} />
           <div className="field"><label>Address</label><input value={form.address} onChange={updateField('address')} placeholder="Shelter address" /></div>
           <div className="form-grid">
             <div className="field"><label>Division</label><input required value={form.division} onChange={updateField('division')} placeholder="Sylhet" /></div>
@@ -97,6 +108,8 @@ export default function ShelterManagementTab() {
           </div>
         </form>
       </div>
+
+      <FacilityOverviewMap shelters={shelters} warehouses={warehouses} />
 
       <section className="module-section">
         <div className="section-heading">

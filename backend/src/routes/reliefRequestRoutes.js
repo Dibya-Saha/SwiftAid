@@ -5,6 +5,7 @@ const {
   getReliefRequest,
   updateReliefRequestStatus,
   updateDispatchedQuantity,
+  donateToReliefRequest,
 } = require('../controllers/reliefRequestController');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
@@ -15,5 +16,6 @@ router.get('/', requireAuth, listReliefRequests);
 router.get('/:id', requireAuth, getReliefRequest);
 router.patch('/:id/status', requireAuth, requireRole('admin'), updateReliefRequestStatus);
 router.patch('/:id/items/:itemId', requireAuth, requireRole('admin'), updateDispatchedQuantity);
+router.post('/:id/donate', requireAuth, requireRole('donor'), donateToReliefRequest);
 
 module.exports = router;

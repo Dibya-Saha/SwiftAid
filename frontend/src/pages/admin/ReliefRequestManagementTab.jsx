@@ -10,7 +10,17 @@ import {
   fetchItems,
 } from '../../utils/api';
 
-const STATUSES = ['pending', 'waiting_stock', 'approved', 'partially_fulfilled', 'rejected', 'fulfilled'];
+const STATUSES = [
+  { value: 'waiting_stock', label: 'Waiting stock' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'partially_fulfilled', label: 'Partial' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'fulfilled', label: 'Fulfilled' },
+];
+
+function statusLabel(status) {
+  return STATUSES.find((item) => item.value === String(status || '').toLowerCase())?.label || status;
+}
 
 function emptyRow() {
   return { item_id: '', quantity_requested: '' };
@@ -223,7 +233,7 @@ export default function ReliefRequestManagementTab() {
                 <col style={{ width: '28%' }} />
                 <col style={{ width: '20%' }} />
                 <col style={{ width: '110px' }} />
-                <col style={{ width: '148px' }} />
+                <col style={{ width: '128px' }} />
               </colgroup>
               <thead>
                 <tr><th>ID</th><th>SHELTER</th><th>STATUS</th><th>REQUESTER</th><th>REQUESTED ITEMS</th><th>DATE</th><th>ACTIONS</th></tr>
@@ -235,7 +245,7 @@ export default function ReliefRequestManagementTab() {
                   <tr key={r.request_id} onClick={() => viewDetail(r.request_id)} style={{ cursor: 'pointer' }}>
                     <td>#{r.request_id}</td>
                     <td title={r.shelter_name || ''}>{r.shelter_name || r.shelter_id}</td>
-                    <td><span className="status-badge">{r.status}</span></td>
+                    <td><span className="status-badge" title={statusLabel(r.status)}>{statusLabel(r.status)}</span></td>
                     <td><strong>{r.requester_name || '—'}</strong><small>{r.requester_email || ''}</small></td>
                     <td>
                       <small style={{ fontWeight: 600 }}>{r.item_count || 0} items • {r.total_requested || 0} requested • {r.total_remaining ?? 0} remaining</small>
@@ -246,7 +256,7 @@ export default function ReliefRequestManagementTab() {
                       <Select
                         value={r.status}
                         onChange={(e) => handleStatusChange(r.request_id, e.target.value)}
-                        options={STATUSES.map((s) => ({ value: s, label: s }))}
+                        options={STATUSES}
                         variant="pill"
                       />
                     </td>
@@ -272,7 +282,7 @@ export default function ReliefRequestManagementTab() {
             <>
               <div className="info-card" style={{ marginBottom: 16 }}>
                 <p><strong>Shelter:</strong> {detail.shelter_name} (#{detail.shelter_id})</p>
-                <p><strong>Status:</strong> <span className="status-badge">{detail.status}</span></p>
+                <p><strong>Status:</strong> <span className="status-badge">{statusLabel(detail.status)}</span></p>
                 <p><strong>Requested at:</strong> {detail.requested_at ? new Date(detail.requested_at).toLocaleString() : '—'}</p>
                 <p><strong>Requester:</strong> {detail.requester_name || detail.requested_by_admin_id}</p>
                 <div style={{ marginTop: 12 }}>
@@ -280,7 +290,7 @@ export default function ReliefRequestManagementTab() {
                   <Select
                     value={detail.status}
                     onChange={(e) => handleStatusChange(detail.request_id, e.target.value)}
-                    options={STATUSES.map((s) => ({ value: s, label: s }))}
+                    options={STATUSES}
                   />
                 </div>
               </div>
