@@ -29,9 +29,17 @@ export default function Register() {
     setSuccess('');
     setLoading(true);
     try {
-      await registerUser(form);
-      setSuccess('Account created. Redirecting to sign in…');
-      setTimeout(() => navigate('/login'), 1200);
+      const result = await registerUser(form);
+      if (result?.needsVerification) {
+        setSuccess('Account created. Check your email for the verification code…');
+        setTimeout(
+          () => navigate('/verify-email', { state: { email: form.email, mailError: result?.mailSent === false } }),
+          1200,
+        );
+      } else {
+        setSuccess('Account created. Redirecting to sign in…');
+        setTimeout(() => navigate('/login'), 1200);
+      }
     } catch (err) {
       setError(err.message);
     } finally {

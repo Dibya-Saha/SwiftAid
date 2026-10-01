@@ -447,3 +447,4 @@ Run migrations in numeric order after the base schema:
 25. `025_shelter_inventory_audit_trigger.sql` — installs the shelter inventory audit trigger
 26. `026_get_or_create_location.sql` — centralizes administrative location lookup and creation
 27. `027_donate_to_request_procedure.sql` — adds `donate_to_request()` atomic request-donation procedure
+28. `028_email_verification.sql` — adds email verification flag and code table for authentication
