@@ -98,25 +98,62 @@ Authorization is enforced by backend middleware. Frontend route protection only 
 - A PostgreSQL database, such as `drms`
 - SMTP credentials if email verification is enabled
 
-## Installation
+## Setup From a Fresh Clone
 
-Clone the repository and install all workspace dependencies from the project root:
+The commands below work from PowerShell, Command Prompt, Git Bash, or a Unix-like shell. Run them from the repository root.
+
+### 1. Clone the repository
+
+```bash
+git clone <repository-url>
+cd <repository-folder>
+```
+
+Check that the root contains `DRMS_SCHEMA.sql`, `backend/`, and `frontend/` before continuing.
+
+### 2. Check prerequisites
+
+```bash
+node --version
+npm --version
+psql --version
+```
+
+Install Node.js 18 or newer and PostgreSQL 13 or newer if any command is missing. Make sure the PostgreSQL service is running.
+
+### 3. Install dependencies
+
+Install the root workspace dependencies. This installs both the backend and frontend packages:
 
 ```bash
 npm install
 ```
 
-Create the database, then apply the base schema:
+### 4. Create the PostgreSQL database
+
+Create a database named `drms` using pgAdmin, Navicat, or `psql`:
+
+```bash
+createdb -U postgres drms
+```
+
+If the database already exists, keep it and skip this command. The database name, user, and password must match `backend/.env`.
+
+### 5. Apply the database schema and migrations
+
+Apply the base schema first:
 
 ```bash
 psql -U postgres -d drms -f DRMS_SCHEMA.sql
 ```
 
-Apply the migration files in `backend/migrations/` in numeric order. The migrations are intended to be run once against the same database used by the backend. Navicat users can open each `.sql` file in a query window and execute them in order.
+Then run the files in `backend/migrations/` in numeric order, from `001_...sql` through `028_...sql`. Do not run the files ending in `_down.sql`; those are rollback scripts.
 
-## Environment Variables
+Navicat users can open `DRMS_SCHEMA.sql`, execute it, then open each numbered migration in order and execute it against the `drms` database. Migrations should normally be applied only once to a database.
 
-Create `backend/.env` and configure the PostgreSQL and JWT settings:
+### 6. Configure the backend environment
+
+Create a file named `backend/.env`:
 
 ```env
 PORT=5000
@@ -127,34 +164,56 @@ DB_USER=postgres
 DB_PASSWORD=your_database_password
 JWT_SECRET=replace_with_a_long_random_secret
 JWT_EXPIRES_IN=8h
+SMTP_USER=your_gmail_address@gmail.com
+SMTP_APP_PASSWORD=your_gmail_app_password
 ```
 
-For email verification, also configure the SMTP variables expected by the mail service in the backend. Do not commit `.env` files, passwords, JWT secrets, or API keys.
+`SMTP_USER` and `SMTP_APP_PASSWORD` are required for the email verification code to be delivered. For Gmail, enable 2-Step Verification and create an App Password; do not use the normal Gmail account password.
 
-## Running the Application
+Never commit `.env`, passwords, JWT secrets, or API keys. `.env` is ignored by Git.
 
-Start both the API and frontend from the repository root:
+### 7. Start the whole project
+
+Start the backend and frontend together from the repository root:
 
 ```bash
 npm run dev
 ```
 
-Or run each process separately:
+Or use two terminals:
 
 ```bash
+# Terminal 1
 npm run dev:backend
+
+# Terminal 2
 npm run dev:frontend
 ```
 
-Default URLs:
+Open http://localhost:5173. The backend runs at http://localhost:5000, and the API health check is available at http://localhost:5000/api/health.
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:5000
-- Health check: http://localhost:5000/api/health
+The Vite development server proxies `/api` requests to `http://localhost:5000`.
 
-The Vite development server proxies `/api` requests to the backend.
+### 8. Verify the installation
 
-Production-style commands:
+Check the backend and database connection:
+
+```bash
+curl http://localhost:5000/api/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "ok",
+  "db": "connected"
+}
+```
+
+Then register a user at http://localhost:5173/register, verify the email code, and sign in. The available dashboards depend on the selected role.
+
+### Production-style commands
 
 ```bash
 npm run build -w frontend
@@ -212,21 +271,98 @@ Important database safeguards include:
 ## Useful Project Files
 
 ```text
-backend/src/server.js                 Express application and route mounting
-backend/src/db.js                     PostgreSQL connection pool
-backend/src/middleware/auth.js        JWT and role middleware
-backend/src/controllers/              Request validation and business workflows
-backend/src/routes/                   API endpoint definitions
-backend/src/sqls/                     Parameterized SQL and database objects
-backend/migrations/                   Incremental schema and database changes
-frontend/src/App.jsx                  Frontend routes and role dashboards
-frontend/src/utils/api.js             Centralized API client
-frontend/src/utils/auth.js            Token and session storage
-frontend/src/components/              Shared dashboard components
-frontend/src/pages/                   Authentication and role-specific pages
-DRMS_SCHEMA.sql                       Base database schema
-docs/DATABASE_SCHEMA.md               Table and relationship reference
+.
+├── DRMS_SCHEMA.sql                   Base PostgreSQL schema
+├── README.md                         Setup, usage, and troubleshooting guide
+├── PROJECT_GUIDELINES.md             Course project requirements
+├── package.json                      Root workspace scripts
+├── demo/                             Application screenshots
+├── docs/
+│   ├── AGENTS.md                     Architecture and contribution guidance
+│   └── DATABASE_SCHEMA.md             Table and relationship reference
+├── backend/
+│   ├── package.json                  Backend scripts and dependencies
+│   ├── migrations/                   Numbered schema and database-object migrations
+│   └── src/
+│       ├── server.js                 Express application and route mounting
+│       ├── db.js                     PostgreSQL connection pool
+│       ├── middleware/auth.js        JWT and role middleware
+│       ├── controllers/              Validation and business workflows
+│       ├── routes/                   API endpoint definitions
+│       ├── sqls/                     Parameterized SQL and database objects
+│       └── utils/mailer.js           Gmail SMTP verification mailer
+└── frontend/
+		├── package.json                  Frontend scripts and dependencies
+		├── vite.config.js                Vite server and /api proxy
+		└── src/
+				├── App.jsx                   Frontend routes and role dashboards
+				├── components/               Shared dashboard components
+				├── pages/                    Authentication and role-specific pages
+				├── styles/                   Page-specific styles
+				├── styles.css                Shared application styles
+				└── utils/
+						├── api.js                Centralized API client
+						└── auth.js                Token and session storage
 ```
+
+## Troubleshooting
+
+### `npm run dev` does not start
+
+- Confirm the terminal is in the repository root, not inside `backend/` or `frontend/`.
+- Run `npm install` again from the root.
+- Check that Node.js is version 18 or newer.
+- Start the processes separately with `npm run dev:backend` and `npm run dev:frontend` to see which side is failing.
+
+### `ECONNREFUSED` or `database unreachable`
+
+- Confirm PostgreSQL is running.
+- Confirm `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` in `backend/.env`.
+- Test the same credentials directly:
+
+  ```bash
+  psql -h localhost -p 5432 -U postgres -d drms
+  ```
+
+- Confirm `DRMS_SCHEMA.sql` and all numbered migrations were executed against `drms`.
+
+### `relation does not exist` or missing function/procedure errors
+
+The base schema or a migration is missing. Apply `DRMS_SCHEMA.sql`, then apply every numbered migration in order. Do not apply `_down.sql` files. Restart the backend after the database objects are installed.
+
+### Port `5000` or `5173` is already in use
+
+Stop the process using the port, or change the backend `PORT` and the frontend proxy target together. The frontend proxy in `frontend/vite.config.js` must point to the same port used by the backend.
+
+### Registration succeeds but no verification email arrives
+
+- Confirm `SMTP_USER` and `SMTP_APP_PASSWORD` are present in `backend/.env`.
+- For Gmail, use a 16-character App Password rather than the normal account password.
+- Restart the backend after changing `.env`.
+- Check the backend terminal for `[auth/register] email failed`.
+- Use **Resend code** after the 60-second resend cooldown.
+
+### Login says email verification is required
+
+Open `/verify-email`, enter the six-digit code sent by email, and verify the account before signing in. If the code expired, request a new one. Verification codes expire after 15 minutes and have a limited number of attempts.
+
+### Login returns `Invalid email or password`
+
+Confirm that the email is registered and that the password is the original plain password used during registration. Do not compare two bcrypt hash strings directly; bcrypt uses a different salt each time. The backend must verify passwords with `bcrypt.compare`.
+
+### API requests return `401` or `403`
+
+- `401` means the JWT is missing, invalid, or expired. Sign out and sign in again.
+- `403` means the account is authenticated but its role is not allowed to perform that action.
+- Do not manually change the role in browser storage; authorization is enforced by the backend token and database user role.
+
+### Map tiles or geocoding do not load
+
+Check the browser network panel and confirm the frontend has internet access. The application uses Leaflet map tiles and the backend geocoding route; the rest of the application can still run without map data.
+
+### Changes are not visible in the browser
+
+Confirm the frontend is running on http://localhost:5173, refresh the page, and check the browser console. If the API changed, restart the backend. If dependencies changed, stop the dev server and run `npm install` again.
 
 ## Development Notes
 
