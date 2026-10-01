@@ -20,7 +20,9 @@ async function request(path, options = {}) {
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new Error(data.message || 'Something went wrong talking to the server');
+    const error = new Error(data.message || 'Something went wrong talking to the server');
+    error.details = data;
+    throw error;
   }
 
   return data;
@@ -33,6 +35,12 @@ export const loginUser = (payload) =>
   request('/auth/login', { method: 'POST', body: JSON.stringify(payload) });
 
 export const fetchMe = () => request('/auth/me');
+
+export const verifyEmail = (payload) =>
+  request('/auth/verify-email', { method: 'POST', body: JSON.stringify(payload) });
+
+export const resendCode = (payload) =>
+  request('/auth/resend-code', { method: 'POST', body: JSON.stringify(payload) });
 
 export const createDisaster = (payload) =>
   request('/disasters', { method: 'POST', body: JSON.stringify(payload) });

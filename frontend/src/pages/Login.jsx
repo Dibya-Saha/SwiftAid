@@ -23,6 +23,10 @@ export default function Login() {
       saveSession(token, user);
       navigate(ROLE_HOME[user.role] || '/login');
     } catch (err) {
+      if (err.details?.needsVerification) {
+        navigate('/verify-email', { state: { email: form.email } });
+        return;
+      }
       setError(err.message);
     } finally {
       setLoading(false);
