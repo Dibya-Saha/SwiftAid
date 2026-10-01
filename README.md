@@ -364,15 +364,4 @@ Check the browser network panel and confirm the frontend has internet access. Th
 
 Confirm the frontend is running on http://localhost:5173, refresh the page, and check the browser console. If the API changed, restart the backend. If dependencies changed, stop the dev server and run `npm install` again.
 
-## Development Notes
 
-- Keep backend and frontend changes in their respective directories.
-- Add reusable frontend API calls to `frontend/src/utils/api.js`.
-- Keep authentication and authorization checks on the backend.
-- Use transactions when one operation changes multiple tables.
-- Preserve soft-deleted records where the existing module uses `archived_at`.
-- Never commit credentials or local environment files.
-
-## Course Context
-
-This project was developed for the Bangladesh University of Engineering and Technology CSE 216 Database Sessional course. The project guidelines require normalized relational design, raw SQL, secure password hashing, access-controlled API routes, validation, and a functional role-aware frontend. See [`PROJECT_GUIDELINES.md`](PROJECT_GUIDELINES.md) for the evaluation requirements.
